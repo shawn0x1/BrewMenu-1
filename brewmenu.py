@@ -114,7 +114,7 @@ def create_panel(window, start_row, start_col, title, content, max_cols=5, conte
         panel.addstr(row_cnt, startcol, line)
         row_cnt+=1
 
-    panel.addstr(row_cnt, inner_text_offset, '_'*(panel_w-inner_text_offset*2))
+    panel.addstr(row_cnt, inner_text_offset, '-'*(panel_w-inner_text_offset*2))
     #row_cnt+=1
 
     ###########################################################################################
