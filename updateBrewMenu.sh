@@ -12,8 +12,9 @@ sleep 3
 if [ ! -d "/home/halfway/BrewMenu/ascii_art" ]; then
 	mkdir /home/halfway/BrewMenu/ascii_art
 fi
-chmod a+wrx /home/halfway/BrewMenu/*
-chown halfway /home/halfway/BrewMenu/*
+chmod -R a+wrx /home/halfway/BrewMenu/
+chown -R halfway /home/halfway/BrewMenu/
+chgrp -R users /home/halfway/BrewMenu/
 
 /usr/bin/python3 /home/halfway/BrewMenu/setup.py
 menu () { cd /home/halfway/BrewMenu; }

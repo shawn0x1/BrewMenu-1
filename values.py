@@ -52,15 +52,17 @@ sheet_url = "https://docs.google.com/spreadsheets/d/13AHRFbjuJ1F6LEDU5o2949DCyCF
 # For changin' whenever:
 logo_title = 'Halfway Crooks'
 # Good logo fonts: pagga, mono9, ascii9, emboss, emboss2, future, smblock (meh)
-logo_font = 'mono9' #'emboss' #'pagga' #'ascii9'  #'bigascii9'  #'emboss2' #'future'
+logofonts = ['big', 'script', 'shadow', 'slant', 'smascii12', 'standard']
+logo_font = logofonts[3]    #'mono9' #'emboss' #'pagga' #'ascii9'  #'bigascii9'  #'emboss2' #'future'
 # logo_offset = 250  # should range from ~100 to ~290
 logo_color = color_codes['GREEN']
 
 IMGFROMFILE = True
-LOGOFILE = 'ascii_art/halfway_slant_art.txt' #'fig.img'
+LOGOFILE = 'ascii_art/halfway_{}_art.txt'.format(logo_font) #'fig.img'
 
 col_lbls = ['Name', 'Type', 'ABV', 'Pour', 'Cost']
-lbls_font = 'future' #'small' #'bubble' #'pagga' #'wideterm' #'smbraille' # 'smmono9' # 'smblock' # 'emboss2' # 'future'
+lblfonts = ['future', 'emboss', 'bubble', 'digital', 'mini', 'small', 'smscript', 'smslant']
+lbls_font = lblfonts[0]     #'small' #'bubble' #'pagga' #'wideterm' #'smbraille' # 'smmono9' # 'smblock' # 'emboss2' # 'future'
 lbls_color = color_codes['GREEN']
 
 prompt_str = "sh-v4.4$ ./halfway_crooks.sh"

@@ -56,7 +56,7 @@ def create_panel(window, start_row, start_col, title, content, max_cols=5, conte
     title_art_lines = len(title_art)
     screen_height = max_dimensions(window)[0]
 
-    panel_h = screen_height - start_row+3  #+6
+    panel_h = screen_height - start_row+1 #3  #+6
     while (start_row+panel_h) > (screen_height + 2):
         panel_h-=1
 
@@ -91,11 +91,11 @@ def create_panel(window, start_row, start_col, title, content, max_cols=5, conte
     ls=border_chars[0]
     rs=border_chars[1]
     ts=border_chars[2]
-    bs=border_chars[3]
+    bs=curses.ACS_HLINE #'=' #border_chars[3]
     tl=border_chars[4]
     tr=border_chars[5]
     bl=border_chars[6]
-    br=border_chars[7]
+    br=curses.ACS_LRCORNER #border_chars[7]
     panel.border(ls, rs, ts, bs, tl, tr, bl, br)
 
     inner_text_offset = 3
@@ -108,11 +108,14 @@ def create_panel(window, start_row, start_col, title, content, max_cols=5, conte
 
     for line in title_art:
         line = line.strip()
-        panel.addstr(row_cnt, int(buff_cnt*0.75) + inner_text_offset, line)
+        startcol = int(buff_cnt*0.75) + inner_text_offset
+        if title.lower() == 'type' and line == title_art[0].strip():
+            startcol -= 1
+        panel.addstr(row_cnt, startcol, line)
         row_cnt+=1
 
     panel.addstr(row_cnt, inner_text_offset, '_'*(panel_w-inner_text_offset*2))
-    row_cnt+=1
+    #row_cnt+=1
 
     ###########################################################################################
     item_cnt = 0
@@ -153,7 +156,7 @@ def create_panel(window, start_row, start_col, title, content, max_cols=5, conte
 def draw_menu(window, menu):
     global menu_width, menu_toprow
     ncols = len(menu.keys())
-    next_col_y = len(images.logo['text']) + 2
+    next_col_y = len(images.logo['text']) + 1 #2
     next_col_x = 3 #1
     if not FIT_SCREEN:
         if menu_width > 0:
@@ -186,7 +189,7 @@ def draw_image(window, image, attrs=None):
         overflow = False
         for column, symbol in enumerate(line, start=start_column):
             if (column < terminal_width):
-                window.addch(row+image['row_offset']+1, column%terminal_width, symbol)
+                window.addch(row+image['row_offset'], column%terminal_width, symbol)
 
     window.attrset(curses.color_pair(0))
 
@@ -206,10 +209,16 @@ def create_snowflake(window):
             valid_colspace = (width-menu_width)//2
         if column > (width/2):
             if column < width-valid_colspace:
-                column = random.randrange(width-valid_colspace,width)
+                try:
+                    column = random.randrange(width-valid_colspace,width)
+                except ValueError:
+                    column = width-1
         else:
             if column > valid_colspace:
-                column = random.randrange(0,valid_colspace)
+                try:
+                    column = random.randrange(0,valid_colspace)
+                except ValueError:
+                    column = 1
     return 0, column, char
 
 def move_snowflakes(prev, window):
@@ -228,7 +237,10 @@ def move_snowflakes(prev, window):
             if new_row >= menu_toprow:
                 if column > (width/2):
                     if column < width-valid_colspace:
-                        column = random.randrange(width-valid_colspace,width)
+                        try:
+                            column = random.randrange(width-valid_colspace,width)
+                        except ValueError:
+                            column = width-1
                         char = ' '
                 else:
                     if column > valid_colspace:
@@ -270,9 +282,9 @@ def main(window):
 
     logo_img = images.image_dict['logo']
     menu = getmenu.menu_dict()
-    columns = []
-    for (k,v) in menu.items():
-        columns.append(images.Column(window, k, v))
+    # columns = []
+    # for (k,v) in menu.items():
+    #     columns.append(images.Column(window, k, v))
 
     prompt_str = val.prompt_str
     prompt_len = len(prompt_str)
@@ -287,11 +299,11 @@ def main(window):
         try:
             scroll_cnt %= 100
             window.erase()
-            window.addstr(1,1,prompt_str)
+            window.addstr(0,1,prompt_str)
             if scroll_cnt % 2 == 0:
                 toggle_char = '_' if toggle_cursor else ' '
                 toggle_cursor = not toggle_cursor
-            window.addch(1,1+prompt_len,toggle_char, curses.color_pair(val.color_codes['WHITE']))# | curses.A_BLINK)
+            window.addch(0,1+prompt_len,toggle_char, curses.color_pair(val.color_codes['WHITE']))# | curses.A_BLINK)
 
             draw_image(window, logo_img, attrs=[curses.A_BOLD]) #, curses.A_UNDERLINE]) #, curses.A_REVERSE]) #, curses.A_BLINK])
             draw_menu(window, menu)
