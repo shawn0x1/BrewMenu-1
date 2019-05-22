@@ -57,10 +57,10 @@ logo_font = 'mono9' #'emboss' #'pagga' #'ascii9'  #'bigascii9'  #'emboss2' #'fut
 logo_color = color_codes['GREEN']
 
 IMGFROMFILE = True
-LOGOFILE = 'ascii_art/Halfway_slant_art.txt' #'fig.img'
+LOGOFILE = 'ascii_art/halfway_slant_art.txt' #'fig.img'
 
 col_lbls = ['Name', 'Type', 'ABV', 'Pour', 'Cost']
-lbls_font = 'bubble' #'pagga' #'wideterm' #'smbraille' # 'smmono9' # 'smblock' # 'emboss2' # 'future'
+lbls_font = 'future' #'small' #'bubble' #'pagga' #'wideterm' #'smbraille' # 'smmono9' # 'smblock' # 'emboss2' # 'future'
 lbls_color = color_codes['GREEN']
 
 prompt_str = "sh-v4.4$ ./halfway_crooks.sh"

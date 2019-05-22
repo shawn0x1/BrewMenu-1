@@ -156,7 +156,8 @@ def get_art(font, text, key, usetoilet=False):
 	art = []
 	if not os.path.isdir(art_dir):
 		os.mkdir(art_dir)
-	key = key.replace(' ', '_')
+	#key = key.replace(' ', '_')
+	key = key.strip().lower()
 	out_file = art_dir + '/' + key + '_' + font + '_art.txt'
 	file_dict.update({key : out_file})
 	if not os.path.isfile(out_file):
