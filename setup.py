@@ -3,8 +3,8 @@ from subprocess import call
 import sys
 import stat
 
-os.system('echo "set tabsize 4" >> /home/halfway/.nanorc')
-os.system('echo "set tabstospaces" >> /home/halfway/.nanorc')
+os.system('echo "set tabsize 4" > /home/halfway/.nanorc')
+# os.system('echo "set tabstospaces" >> /home/halfway/.nanorc')
 
 prefix_fp='/home/halfway/BrewMenu/'
 if os.path.isfile('removelist.txt'):
