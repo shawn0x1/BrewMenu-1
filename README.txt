@@ -1,5 +1,6 @@
-To install dependencies for first time use:
-$ sudo python3 setup.py
+To update all files anytime + install dependencies for first time use (from BrewMenu/):
+$ mv updateBrewMenu.sh .. && cd .. && sudo ./updateBrewMenu.sh
+^ will automatically run setup.py; some configs (like apt source mirrors) are specific to RPi running Stretch Lite
 
 To run the menu GUI:
 $ python3 brewmenu.py
@@ -19,7 +20,7 @@ ________________________________________________________________________________
 Objective:
 + Create a Bash-styled beer menu for Halfway Crooks Brewing & Blending
 + Deployment target is to run on Raspberry Pi with output to HDMI
-    L___> Set up full environment for May 9th launch
++ Event-specific TUI application example located in the CocktailHour directory
 
 Methods:
 + A Python script will leverage Google APIs for retrieving menu data from a Google Sheets document
