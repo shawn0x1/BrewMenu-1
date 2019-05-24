@@ -64,7 +64,7 @@ https://developers.google.com/api-client-library/python/auth/api-keys
 
 hostname:           crooks
 crooks login:       halfway
-passwd:             sh00k1s  (Shook Ones)
+passwd:             *******
 halfway@crooks:/mnt/usb/brewmenu
 /home/halfway/BrewMenu
 
