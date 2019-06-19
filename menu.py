@@ -1,251 +1,456 @@
-from asciimatics.screen import Screen
-import time
-import signal
+import pickle
 import sys
 import os
-from menu_example_dict import menuexample
-import socket
+import curses
+import time
+import signal
+from googleapiclient.discovery import build
+from google_auth_oauthlib.flow import InstalledAppFlow
+from google.auth.transport.requests import Request
+from google.auth.exceptions import TransportError
+from httplib2 import ServerNotFoundError
 
-DEBUG = True
+DEBUG = False #True
 
-########### CONSTANTS #############
-bgcolor = Screen.COLOUR_BLACK
-textcolor = Screen.COLOUR_GREEN
-textattrs = Screen.A_BOLD
-logotext = 'HaLfWaY cRoOkS'
-logolen = len(logotext)
+########## Google Sheets API section #######################
+SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
+# LOGO_RANGE = 'A1:B1'
+#COL1_RANGE = 'A2:A14'
+#COL2_RANGE = 'B2:B14'
+#ranges = [COL1_RANGE, COL2_RANGE]
+# beers_ranges = ['beers!A2:A17', 'beers!B2:B17', 'beers!C2:C17', 'beers!D2:D17', 'beers!E2:E17']		#'beers!A2:E17'
+beers_ranges1 = ['beers!A3:A10', 'beers!B3:B10', 'beers!C3:C10', 'beers!D3:D10', 'beers!E3:E10']
+beers_ranges2 = ['beers!A11:A17', 'beers!B11:B17', 'beers!C11:C17', 'beers!D11:D17', 'beers!E11:E17']
+beers_ranges1_raw = ('A3:A10', 'B3:B10', 'C3:C10', 'D3:D10', 'E3:E10')
+beers_ranges2_raw = ('A11:A17', 'B11:B17', 'C11:C17', 'D11:D17', 'E11:E17')
+beers_col_lbls = ('Name', 'Type', 'ABV', 'Pour', 'Cost')
+# heaps_range = 'heaps!A1:A24'
+heaps_ranges = ('heaps!A2:A4', 'heaps!A7:A10', 'heaps!A13:A16', 'heaps!A19:A24')
+heaps_ranges_raw = ('A2:A4', 'A7:A10', 'A13:A16', 'A19:A24')
+heaps_col_lbls = ('Double Fried Belgian Fries', 'Cheese', 'Meat', 'Heaps Savory New Zealand Pies and Rolls')
 
-########### GLOBALS ###############
-logo_x = 0
-logo_y = 0
-logo_wrap_x = 0
+sheet_url = "https://docs.google.com/spreadsheets/d/13AHRFbjuJ1F6LEDU5o2949DCyCFtPAxXZgHg2fLH_jc/edit?ts=5c8913ff#gid=0"
+beers_url = 'https://docs.google.com/spreadsheets/d/13AHRFbjuJ1F6LEDU5o2949DCyCFtPAxXZgHg2fLH_jc/edit?ts=5c8913ff#gid=0'
+heaps_url = 'https://docs.google.com/spreadsheets/d/13AHRFbjuJ1F6LEDU5o2949DCyCFtPAxXZgHg2fLH_jc/edit?ts=5c8913ff#gid=1702929798'
 
-########### CLASSES ###############
-# class DimensionError(Exception):
-# 	sys.exit()
+def extract_id(url):
+	start = url.index('/d/') + 3
+	end = url.index('/edit')
+	return url[start:end]
 
-class Panel():
-	def __init__(self, screen, ulcx, ulcy, brcx, brcy, text=None):
-		self.screen = screen
-		self.ulcx = ulcx
-		self.ulcy = ulcy
-		self.brcx = brcx
-		self.brcy = brcy
-		self.tl = (self.ulcx, self.ulcy)
-		self.tr = (self.brcx, self.ulcy)
-		self.br = (self.brcx, self.brcy)
-		self.bl = (self.ulcx, self.brcy)
+SHEET_ID = extract_id(sheet_url)
+BEERS_ID = extract_id(beers_url)
+HEAPS_ID = extract_id(heaps_url)
 
-		self.text = text 
-		self.width = abs(brcx - ulcx)
-		self.height = abs(brcy - ulcy)
-		self.texth, self.textw = get_dict_h_w(text)
-
-	def draw(self, thinline=False):
-		self.screen.move(self.ulcx, self.ulcy)
-		self.screen.draw(self.ulcx, self.brcy, colour=textcolor, thin=thinline) 	# Draw left border
-		self.screen.move(self.ulcx, self.ulcy)
-		self.screen.draw(self.brcx, self.ulcy, colour=textcolor, thin=thinline) 	# Draw top border
-		self.screen.move(self.ulcx, self.brcy)
-		self.screen.draw(self.brcx, self.brcy, colour=textcolor, thin=thinline) 	# Draw bottom border
-		self.screen.move(self.brcx, self.ulcy)
-		self.screen.draw(self.brcx, self.brcy, colour=textcolor, thin=thinline)	# Draw right border
-		# TODO: add text
+def log_debug(msg,filename='debug.log'):
+	#print(msg)
+	cmd = 'echo "{}" >> {}'.format(msg, filename)
+	os.system(cmd)
 
 
-class Menu():
-	def __init__(self, screen, menudict, startx, starty, endx, endy, thick=2):
-		self.screen = screen
-		self.menudict = menudict
-		self.sx = startx
-		self.ex = endx
-		self.w = abs(endx - startx)
 
-		self.sy = starty
-		self.ey = endy
-		self.h = abs(endy - starty)
-		# ^TODO: ADJUST HEIGHT BASED ON len(self.menudict.values()) IF > self.h; CONSTRAIN TO SCREEN HEIGHT
+def read_sheet(sheet, cells, sid=SHEET_ID): # url=sheet_url):
+	# sid = extract_id(url)
+	return sheet.values().get(
+						majorDimension='COLUMNS',
+						spreadsheetId=sid,
+						range=cells,
+						valueRenderOption='FORMULA'
+						).execute().get('values', [])
 
-
-		self.ncols = len(menudict) #numcols # == len(menudict.keys())
-		self.thick = thick 			# Border line thickness
-
-		## Corner coordinate pairs
-		self.tl = (self.sx, self.sy)	# Top-left corner
-		self.tr = (self.ex, self.sy)	# Top-right corner
-		self.br = (self.ex, self.ey)	# Bottom-right corner
-		self.bl = (self.sx, self.ey)	# Bottom-left corner
-		self.cols = [] 
-		self.make_cols()
-
-	def make_cols(self):
-		total_border_w = self.thick * (self.ncols + 1)
-		per_col_w = (self.w // self.ncols) - total_border_w
-
-		last_col_x = self.sx + self.thick 	# Starts at menu startx + border thickness
-		# for n in range(self.ncols):
-		for col_title in list(self.menudict.keys()):
-			# TODO: adjust height (y-bounds) of panels based on len(), unless Menu.h adjusts properly on init
-			# col_title = self.menudict.keys()[n]
-			## Split each key-value entry in menudict into its own dict --> {'Title': ['Values',...]}
-			col_text = {col_title : self.menudict[col_title]}
-			col = Panel(self.screen, last_col_x, self.sy, last_col_x+per_col_w, self.ey, col_text)
-			self.cols.append(col)
-			last_col_x += col.brcx + self.thick
-			# if (n == self.ncols-1) and (last_col_x > self.ex):
-			# 	msg = "Column {} has exceeded allowed width for menu: max={}, actual={}".format(n,self.ex,last_col_x)
-			# 	log_debug(msg)
-				# raise DimensionError(msg)
-
-
-	def draw(self):
-		# outline = [self.tl, self.tr, self.br, self.bl]
-		# polygon = [outline]
-		draw_panel(self.screen, self.sx, self.sy, self.ex, self.ey)
-		for col in self.cols:
-			# polygon.append([col.tl, col.tr, col.br, col.bl])
-			col.draw()
-
-		# self.screen.fill_polygon(polygon, colour=textcolor, bg=bgcolor)
-
-
-########### FUNCTIONS #######################
-
-def cleanup(signum, stack):
-	# ...
-	#print('Goodbye!')
-	# log_debug('SIGINT received: {}'.format(signum))
-	sys.exit()
-
-# def log_debug(msg,filename='debug.log'):
-# 	print(msg)
-# 	cmd = 'echo "{}" >> {}'.format(msg, filename)
-# 	os.system(cmd)
-
-def network_connected(host="8.8.8.8", port=53, timeout=3):
-	"""
-   Host: 8.8.8.8 (google-public-dns-a.google.com)
-   OpenPort: 53/tcp
-   Service: domain (DNS/TCP)
-   """
+def validate_service():
+	creds = None
+	# The file token.pickle stores the user's access and refresh tokens, and is
+	# created automatically when the authorization flow completes for the first
+	# time.
+	if os.path.exists('token.pickle'):
+		with open('token.pickle', 'rb') as token:
+			try:
+				creds = pickle.load(token)
+			except UnicodeDecodeError:
+				print("ERROR: Invalid token.pickle file, please re-authenticate at https://developers.google.com/sheets/api/quickstart/python")
+				sys.exit(2)
+	# If there are no (valid) credentials available, let the user log in.
+	if not creds or not creds.valid:
+		if creds and creds.expired and creds.refresh_token:
+			try:
+				creds.refresh(Request())
+			except TransportError:
+				log_debug('TransportError caught: Failed to establish connection\n')
+				sys.exit(2)
+		else:
+			flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
+			creds = flow.run_local_server()
+		# Save the credentials for the next run
+		with open('token.pickle', 'wb') as token:
+			pickle.dump(creds, token)
 	try:
-		socket.setdefaulttimeout(timeout)
-		socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect((host, port))
-		return True
-	except Exception as ex:
-		# log_debug(ex.message)
-		return False
+		service = build('sheets', 'v4', credentials=creds) #, developerKey=API_KEY)
+	except ServerNotFoundError:
+		log_debug('ServerNotFoundError caught: Failed to establish connection\n')
+		sys.exit(2)
+	return service
+
+def parse(vals): 		# For currency and percentage values
+	retvals = []
+	for v in vals:
+		subvals = []
+		for vv in v:
+			if isinstance(vv, str):
+				subvals.append(vv.replace('~dollar~', '$'))
+			elif isinstance(vv, float):
+				subvals.append('{:.1f}%'.format(vv*100))
+			else:
+				subvals.append(vv)
+		retvals.append(subvals)	
+	return retvals
+
+def menu_dict():
+	beer_menu1 = dict.fromkeys(beers_col_lbls, [])
+	beer_menu2 = dict.fromkeys(beers_col_lbls, [])
+	heaps_menu = dict.fromkeys(heaps_col_lbls, [])
+	
+	# Call the Sheets API
+	service = validate_service()
+	sheet = service.spreadsheets()
+	
+	for i in range(len(beers_col_lbls)):
+		beer_menu1.update(
+			{
+				beers_col_lbls[i] : parse(read_sheet(sheet, beers_ranges1_raw[i], sid=BEERS_ID))
+			}
+		)
+	for i in range(len(beers_col_lbls)):
+		beer_menu2.update(
+			{
+				beers_col_lbls[i] : parse(read_sheet(sheet, beers_ranges2_raw[i], sid=BEERS_ID))
+				
+			}
+		)
+	for i in range(len(heaps_col_lbls)):
+		heaps_menu.update(
+			{
+				heaps_col_lbls[i] : parse(read_sheet(sheet, heaps_ranges[i], sid=HEAPS_ID)) 
+				
+			}
+		)
+	return (beer_menu1, beer_menu2, heaps_menu)
 
 
-def demo(screen):
-	# panels = make_panels(screen)
-	# log_debug('Demo begun! [{}]'.format(time.time()))
+########## Images & Art section ###################
+logo_text = 'Halfway Crooks :: Beer && Brewing'
+prompt_str = "sh-v4.4$ ./halfway_crooks.sh"
+logofonts = ['big', 'script', 'shadow', 'slant', 'smascii12', 'standard']
+logo_font = logofonts[3]
+lblfonts = ['future', 'emboss', 'bubble', 'digital', 'mini', 'small', 'smscript', 'smslant', 'standard']
+lbls_font = lblfonts[8] #5
+WHITE = 0
+BLACK = 1
+GREEN = 3
+art_dir = os.getcwd() + '/art/'
 
-	## Verify network connection for fetching menu contents from Google Sheets; if none found, use menu_example_dict
-	if network_connected() and not DEBUG:
-		menucontents = getmenu.menu_dict()
+def get_art(font, text):
+	if not os.path.isdir(art_dir):
+		os.mkdir(art_dir)
+	art = []
+	split_text = text.strip().lower().split()
+	key_idx = 0
+	if len(split_text) > 1:
+		if '&' in split_text[0] or split_text[0] == '-':
+			key_idx = 1
+	key = split_text[key_idx]
+	art_file = art_dir + key + '_' + font + '_art.txt'
+	if not os.path.isfile(art_file):
+		os.system('figlet -t -f ' + font + ' ' + text + ' > ' + art_file)
+	with open(art_file) as f:
+		art = f.readlines()
+	return art
+
+def longest_str(image): 		# Determine max width of an ASCII art file   ## ENSURE THIS WORKS AS NEEDED
+	max_len = 0
+	if image:
+		try:
+			for item in enumerate(image):
+				for s in item:
+					if len(str(s)) > max_len:
+						max_len = len(str(s))
+		except TypeError:
+			for line in image:
+				if len(str(line)) > max_len:
+					max_len = len(str(line))
+	return max_len
+
+########## Curses TUI section ########################
+LOOP_SLEEP = 0.15
+LINE_SPACE = 3
+menu_rows_fit_error = False
+
+menu_width = 0
+menu_toprow = 0
+logo_x = 0       # <-- formerly 'col_offset = terminal_width() - 1'
+logo_end_x = 0
+logo_y = 0
+logo_img = None
+
+LOGO_ON_SCREEN = 0
+LOGO_WRAP_RIGHT = 1
+LOGO_OFF_SCREEN = 2
+LOGO_WRAP_LEFT = 3
+logo_state_list = [LOGO_ON_SCREEN,LOGO_WRAP_RIGHT,LOGO_OFF_SCREEN,LOGO_WRAP_LEFT]
+logo_state = logo_state_list[0]
+
+BEERS1 = 0
+BEERS2 = 1
+HEAPS = 2
+menu_state_list = [BEERS1, BEERS2, HEAPS]
+menu_state = menu_state_list[0]
+MENU_CHANGE_PERIOD = 10
+
+def max_dimensions(window):
+	height, width = window.getmaxyx()
+	return height - 1, width
+
+def divided_col_width(window, ncols):
+	return max_dimensions(window)[1] // ncols
+
+def create_panel(window, start_row, start_col, title, content, max_cols=5, content_color=GREEN, title_art_font=lbls_font):
+	global menu_rows_fit_error
+	panel = None
+	title_art = get_art(title_art_font, title)
+	title_art_lines = len(title_art)
+	screen_height, screen_width = max_dimensions(window)
+	panel_h = screen_height - start_row + 1 #3
+	#while (start_row+panel_h) > (screen_height + 2):
+	#	panel_h-=1
+	panel_w = longest_str(content)
+	if panel_w > divided_col_width(window, max_cols):
+		panel_w = divided_col_width(window, max_cols)
+
+	# if not FIT_SCREEN:
+	# 	trim = max_dimensions(window)[1] // 20
+	# 	panel_w -= int(trim)
+
+	while (start_col+panel_w) > (screen_width):
+		#panel_w -= 1
+		start_col -= 1
+	try:
+		panel = window.derwin(panel_h, panel_w, start_row, start_col)
+	except:
+		return panel_w 
+	if panel is None:
+		return panel_w
+
+	attr_list = [
+		curses.A_BOLD,
+		curses.A_UNDERLINE,
+		#curses.A_STANDOUT,
+		# curses.A_BLINK,
+		# curses.A_HORIZONTAL,
+		# curses.A_LEFT,
+		# curses.A_LOW,
+		# curses.A_VERTICAL,
+	]
+	attr = curses.color_pair(content_color)
+	panel.attrset(attr)
+	for a in attr_list:
+		attr |= a
+	#panel.attrset(attr)
+	#panel.attrset(curses.color_pair(content_color))
+	#panel.attroff(attr_list[])
+
+	ls=curses.ACS_PLUS #LTEE
+	rs=curses.ACS_PLUS #RTEE
+	ts=curses.ACS_HLINE #curses.ACS_PLMINUS
+	bs=curses.ACS_HLINE #'='
+	tl=curses.ACS_ULCORNER
+	tr=curses.ACS_URCORNER
+	bl=curses.ACS_SSBB
+	br=curses.ACS_LRCORNER
+	panel.border(ls, rs, ts, bs, tl, tr, bl, br)
+	#panel.border()
+
+	inner_text_offset = 5  #3
+	row_cnt = 1 #2
+	top = title_art[0].strip()
+	buff_cnt = 0
+	while (len(top)+4) < panel_w:
+		top = ' ' + top + ' '
+		buff_cnt += 1
+
+	for line in title_art:
+		line = line.strip()
+		startcol = int(buff_cnt*0.75) + (inner_text_offset//2)
+		if lbls_font == 'small' or lbls_font == 'standard':
+			if line == title_art[0].strip():
+				startcol += 1
+			elif line == title_art[len(title_art)-1].strip():
+				startcol += 14
+				if lbls_font == 'standard':
+					startcol += 3
+		panel.addstr(row_cnt, startcol, line, attr)
+		row_cnt+=1
+	#row_cnt+=1
+	panel.addstr(row_cnt, inner_text_offset-1, '~'*((panel_w-inner_text_offset*2)+2)) #, attr)
+	#row_cnt+=1
+
+	item_cnt = 0
+	if content:
+		for row, line in enumerate(content):
+			for s in line:
+				nottitle = s != title
+				if len(title.split())>1 and title.split()[1] == s:
+					nottitle = False
+				if nottitle:
+					if len(str(s)) > 1:
+						row_cnt+=1
+						if start_row+row+row_cnt < start_row+panel_h:
+							#attr = (curses.A_BOLD | curses.A_UNDERLINE | curses.A_STANDOUT)
+							if len(str(s)) == 0 or str(s)[0] == '-':
+								panel.addstr(row+row_cnt, inner_text_offset, str(s).strip())
+							else:
+								panel.addstr(row+row_cnt, inner_text_offset, str(s).strip(), attr)
+						else:
+							menu_rows_fit_error = True
+					row_cnt += (LINE_SPACE-1)
+
+	panel.attrset(curses.color_pair(WHITE))
+	return panel_w
+
+def draw_menu(window, menu):
+	global menu_width, menu_toprow
+	ncols = len(menu.keys())
+	next_col_y = len(logo_img) + 1 		# Represents height of logo art file
+	next_col_x = 0 #1  #3
+	# if not FIT_SCREEN:
+	#     if menu_width > 0:
+	#         next_col_x = int((max_dimensions(window)[1] - menu_width) / 2)
+	offset = 0
+	if DEBUG:
+		k = beers_col_lbls[0]
+		offset = create_panel(window, next_col_y, next_col_x, k, menu.get(k), ncols)
+		next_col_x += (offset - 1)
 	else:
-		menucontents = menuexample
-		
-	menu = Menu(screen, menucontents, 2, 4, screen.width-2, screen.height-2, thick=1)
+		for k in beers_col_lbls:
+			offset = create_panel(window, next_col_y, next_col_x, k, menu.get(k), ncols)
+			next_col_x += (offset - 1)
+	if menu_width == 0:
+		menu_width = next_col_x
+	if menu_toprow == 0:
+		menu_toprow = next_col_y
+
+
+
+def draw_logo(window, image, attrs=None):
+	global logo_x, logo_end_x, logo_state, LOOP_SLEEP
+	terminal_width = max_dimensions(window)[1]
+	#start_column = terminal_width - logo_x
+	
+	if logo_state == LOGO_WRAP_LEFT and logo_x == 0 and 0 < logo_end_x < terminal_width:
+		logo_state = LOGO_ON_SCREEN
+		LOOP_SLEEP += 0.05
+
+	elif logo_state == LOGO_ON_SCREEN and logo_x < terminal_width and logo_end_x >= terminal_width:
+		logo_state = LOGO_WRAP_RIGHT
+
+	elif logo_state == LOGO_WRAP_RIGHT and logo_x >= terminal_width:
+		logo_state = LOGO_OFF_SCREEN
+		return
+
+	elif logo_state == LOGO_OFF_SCREEN:
+		logo_state = LOGO_WRAP_LEFT
+		logo_end_x = -3 #0
+		LOOP_SLEEP -= 0.05
+		return
+
+	attr = curses.color_pair(GREEN)
+	if attrs is not None:
+		for a in attrs:
+			attr |= a
+	window.attrset(attr)
+	## row will range from 1-6, column will range from 0-143 
+
+	start_column = None #logo_x
+	end_column = None #logo_end_x  #start_column + longest_str(image)
+	first_col = None  ## THIS IS THE COLUMN INDEX TO BEGIN DRAWING FROM
+	last_col = terminal_width  							# Dummy large value to initialize
+
+	if logo_state == LOGO_ON_SCREEN or logo_state == LOGO_WRAP_RIGHT:  ## Use both logo_x & logo_end_x
+		for row, line in enumerate(image, start=1):
+			for column, symbol in enumerate(line, start=logo_x):
+				if (column < terminal_width):
+					window.addch(row+logo_y, column, symbol, attr)
+	# elif logo_state == LOGO_WRAP_RIGHT:
+	# elif logo_state == LOGO_OFF_SCREEN:	 ## Reset logo_x & logo_end_x positions
+	elif logo_state == LOGO_WRAP_LEFT:  ## Begin drawing from logo_end_x = 0, set logo_x = 0 when logo_end_x == longest_str(img)-1
+		if logo_end_x >= (longest_str(image) - 1):
+			logo_x = -3 #0
+		else:
+			for row, line in enumerate(image, start=1):			# Start from 1 to leave row space for prompt_str
+				last_col = len(line) - 1
+				for column, symbol in enumerate(line, start=0):
+					if (last_col - column) <= logo_end_x:
+						window.addch(row+logo_y, column, symbol, attr)
+
+	window.attrset(curses.color_pair(WHITE))
+
+def scroll_logo(window, image):
+	global logo_x, logo_end_x
+	max_x = max_dimensions(window)[1] - 1
+	logo_x += 3
+	logo_end_x += 3
+
+
+
+def main(window):
+	global logo_img, menu_rows_fit_error, LINE_SPACE, logo_end_x, menu_state #, menu_state_timestamp
+	curses.init_pair(GREEN, curses.COLOR_GREEN, curses.COLOR_BLACK)
+	curses.curs_set(0)
+	menu_opts = menu_dict()
+	prompt_len = len(prompt_str)
+	toggle_cursor = False
+	toggle_char = '_'
+	scroll_cnt = 0
+	scroll_speed = 5
+	logo_img = get_art(logo_font, logo_text)
+	logo_end_x = logo_x + longest_str(logo_img)
+
+	menu_state_timestamp = time.time()
 
 	while True:
-		## For dynamic resizing of panels when screen dimensions are changed
-		if screen.has_resized():
-			# panels = make_panels(screen)
-			menu = Menu(screen, menucontents, 2, 4, screen.width-2, screen.height-2, thick=1)
+		scroll_cnt %= 100
+		window.erase()
+		# window.addstr(2,2,str(scroll_cnt),curses.color_pair(WHITE))
+		window.addstr(0,1,prompt_str)
+		if scroll_cnt % 2 == 0:
+			toggle_char = '_' if toggle_cursor else ' '
+			toggle_cursor = not toggle_cursor
+		window.addch(0,1+prompt_len,toggle_char, curses.color_pair(WHITE))# | curses.A_BLINK)
+		#window.addch(window.getmaxyx()[0]-1,1+prompt_len,toggle_char, curses.color_pair(WHITE))# | curses.A_BLINK)
 
-		screen.clear()
-		scroll_logo(screen)
+		draw_logo(window, logo_img, attrs=[curses.A_BOLD]) #, curses.A_UNDERLINE]) #, curses.A_REVERSE]) #, curses.A_BLINK])
 
-		menu.draw()
+		if time.time() - menu_state_timestamp >= MENU_CHANGE_PERIOD:
+			menu_state_timestamp = time.time()
+			menu_state = (menu_state + 1) % len(menu_state_list)
+		# state = menu_state_list[menu_state]
+		menu = menu_opts[menu_state]
+		draw_menu(window, menu)
 
-		# draw_panel(screen, screen.width // 5, screen.height // 5, int(screen.width * 0.8), int(screen.height * 0.8))
-		# p1.draw()
-		# p2.draw()
-		# for p in panels:
-		# 	p.draw()
+		# if menu_rows_fit_error:
+		# 	LINE_SPACE -= 1
+		# 	menu_rows_fit_error = False
 
-		# screen.fill_polygon([
-		# 	## Draw a filled polygon provided these (x,y) coordinate tuples for shape
-		# 	[
-		# 		(2, 0),
-		# 		(70, 0),
-		# 		(70, 10),
-		# 		(60, 10)
-		# 	],
-		# 	## Additional nested lists of coordinates for cutting out holes within polygon
-		# 	[
-		# 		(63, 2),
-		# 		(67, 2),
-		# 		(67, 8),
-		# 		(63, 8)
-		# 	]
-		# ], colour=textcolor, bg=bgcolor)
+		if scroll_cnt % scroll_speed == 0:
+			scroll_logo(window, logo_img)
 
-		screen.refresh()
-		time.sleep(0.1)
-
-def get_dict_h_w(d):
-	ph = len(d.values())
-	pw = 0
-	for k in d.keys():
-		if len(k) > pw:
-			pw = len(k)
-	for v in d.values():
-		if len(v) > pw:
-			pw = len(v)
-	return ph, pw
+		window.refresh()
+		time.sleep(LOOP_SLEEP)
+		scroll_cnt += 1
 
 
-## TODO: implement according to needs for menu columns (add more args -- all is currently hardcoded)
-def make_panels(screen):
-	p1_text = {'Make':['Lower', 'Var', 'Settings', 'Gleaner']}
-
-	p1 = Panel(screen, 2, (screen.height // 10), int(screen.width//2)-2, int(screen.height//2)-2, p1_text)
-	p2 = Panel(screen, p1.brcx, p1.ulcy, screen.width-2, p1.brcy, p1_text)
-	# FIXME: ^ finish make_panels() to autogenerate list of panels w/ appropriate dimensions
-
-	return [p1, p2]
-
-
-def scroll_logo(screen):
-	global logo_x, logo_y, logo_wrap_x
-	if logo_y == 0:
-		logo_y = 2
-	# screen.print_at('HaLfWaY cRoOkS', screen.width // 2, screen.height // 2)
-	# screen.clear()
-	if logo_x == screen.width:
-		logo_wrap_x = 0
-	logo_x %= screen.width
-	
-	## Begin printing on left side of screen, starting with last character
-	if logo_wrap_x < logolen:
-		screen.print_at(logotext[logolen-logo_wrap_x-1:], 0, logo_y, textcolor, textattrs)
-		logo_wrap_x += 1
-	else:
-		if logo_x == 0:
-			logo_x += 1
-		screen.print_at(logotext, logo_x, logo_y, textcolor, textattrs)
-		logo_x += 1
-
-
-## Takes in x,y coords for upper-left corner & bottom-right corner
-def draw_panel(screen, ulcx, ulcy, brcx, brcy):
-	screen.move(ulcx, ulcy)
-	screen.draw(ulcx, brcy) 	# Draw left border
-	screen.move(ulcx, ulcy)
-	screen.draw(brcx, ulcy) 	# Draw top border
-	screen.move(ulcx, brcy)
-	screen.draw(brcx, brcy) 	# Draw bottom border
-	screen.move(brcx, ulcy)
-	screen.draw(brcx, brcy)		# Draw right border
-
+def cleanup(signum, stack):
+	sys.exit(2)
 
 if __name__ == '__main__':
-	## Attach cleanup procedure for handling interrupt signals (i.e., KeyboardInterrupt)
 	signal.signal(signal.SIGINT, cleanup)
-
-	## Begin main program
-	Screen.wrapper(demo)
-
+	curses.wrapper(main)
