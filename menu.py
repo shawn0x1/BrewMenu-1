@@ -148,7 +148,7 @@ heaps_lbls_font = 'wideterm' #lblfonts[0]
 WHITE = 0
 BLACK = 1
 GREEN = 3
-art_dir = os.getcwd() + '/art/'
+art_dir = os.environ['HOME'] + '/Desktop/BrewMenu/art/'
 
 def get_art(font, text):
 	if not os.path.isdir(art_dir):
@@ -156,10 +156,19 @@ def get_art(font, text):
 	art = []
 	split_text = text.strip().lower().split()
 	key_idx = 0
+	is_currency = False
 	if len(split_text) > 1:
-		if '&' in split_text[0] or split_text[0] == '-':
+		if '&' in split_text[0] or '$' in split_text[0]:
 			key_idx = 1
-	key = split_text[key_idx]
+	elif '$' in split_text[0]:
+		# split_text[0] = split_text[0].replace('$','d')
+		split_text[0] = split_text[0].replace('$',"\$")
+		is_currency = True
+	if not is_currency:
+		key = split_text[key_idx]
+	else:
+		key = 'd'+split_text[key_idx][2]
+		text = text.replace('$', '"\$"')
 	art_file = art_dir + key + '_' + font + '_art.txt'
 	if not os.path.isfile(art_file):
 		os.system('figlet -t -f ' + font + ' ' + text + ' > ' + art_file)
@@ -304,14 +313,24 @@ def create_beers_panel(window, start_row, start_col, title, content, max_cols=5,
 				if len(title.split())>1 and title.split()[1] == s:
 					nottitle = False
 				if nottitle:
+					s_img = get_art('wideterm', s)
 					if len(str(s)) > 1:
 						row_cnt+=1
 						if start_row+row+row_cnt < start_row+panel_h:
 							#attr = (curses.A_BOLD | curses.A_UNDERLINE | curses.A_STANDOUT)
-							if len(str(s)) == 0 or str(s)[0] == '-':
-								panel.addstr(row+row_cnt, inner_text_offset, str(s).strip())
-							else:
-								panel.addstr(row+row_cnt, inner_text_offset, str(s).strip(), attr)
+
+							## With contents as plaintext:
+							# if len(str(s)) == 0 or str(s)[0] == '-':
+							# 	panel.addstr(row+row_cnt, inner_text_offset, str(s).strip())
+							# else:
+							# 	panel.addstr(row+row_cnt, inner_text_offset, str(s).strip(), attr)
+
+							## With contents as figlet image files:
+							s_img = get_art('wideterm', s)
+							for r in s_img:
+								panel.addstr(row+row_cnt, inner_text_offset, r, attr)
+								row_cnt += 1
+
 						else:
 							menu_rows_fit_error = True
 					row_cnt += (LINE_SPACE-1)
@@ -418,12 +437,23 @@ def create_heaps_panel(window, start_row, start_col, title, content, max_rows=4,
 						row_cnt+=1
 						if start_row+row+row_cnt < start_row+panel_h:
 							#attr = (curses.A_BOLD | curses.A_UNDERLINE | curses.A_STANDOUT)
-							# if len(str(s)) == 0 or str(s)[0] == '-':
+							
+							## Writing contents as plaintext:
 							if item_cnt > 0:
 								panel.addstr(row+row_cnt, inner_text_offset+4, str(s).strip(), attr)
 							else:
 								panel.addstr(row+row_cnt, inner_text_offset, str(s).strip(), attr | curses.A_UNDERLINE)
-								# row_cnt+=1
+
+							## Writing contents as figlet image file:
+							s_img = get_art('wideterm', s)
+							if item_cnt > 0:
+								for r in s_img:
+									panel.addstr(row+row_cnt, inner_text_offset+4, r, attr)
+									row_cnt+=1
+							else:
+								for r in s_img:
+									panel.addstr(row+row_cnt, inner_text_offset, r, attr | curses.A_UNDERLINE)
+									row_cnt+=1
 						else:
 							menu_rows_fit_error = True
 						item_cnt += 1
