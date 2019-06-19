@@ -143,7 +143,8 @@ prompt_str = "sh-v4.4$ ./halfway_crooks.sh"
 logofonts = ['big', 'script', 'shadow', 'slant', 'smascii12', 'standard']
 logo_font = logofonts[3]
 lblfonts = ['future', 'emboss', 'bubble', 'digital', 'mini', 'small', 'smscript', 'smslant', 'standard']
-lbls_font = lblfonts[8] #5
+beers_lbls_font = lblfonts[8] #5
+heaps_lbls_font = 'wideterm' #lblfonts[0]
 WHITE = 0
 BLACK = 1
 GREEN = 3
@@ -213,15 +214,17 @@ def max_dimensions(window):
 def divided_col_width(window, ncols):
 	return max_dimensions(window)[1] // ncols
 
-def create_panel(window, start_row, start_col, title, content, max_cols=5, content_color=GREEN, title_art_font=lbls_font):
+def divided_row_height(window, nrows):
+	return max_dimensions(window)[0] // nrows
+
+def create_beers_panel(window, start_row, start_col, title, content, max_cols=5, content_color=GREEN, title_art_font=beers_lbls_font):
 	global menu_rows_fit_error
 	panel = None
 	title_art = get_art(title_art_font, title)
 	title_art_lines = len(title_art)
 	screen_height, screen_width = max_dimensions(window)
 	panel_h = screen_height - start_row + 1 #3
-	#while (start_row+panel_h) > (screen_height + 2):
-	#	panel_h-=1
+
 	panel_w = longest_str(content)
 	if panel_w > divided_col_width(window, max_cols):
 		panel_w = divided_col_width(window, max_cols)
@@ -242,7 +245,7 @@ def create_panel(window, start_row, start_col, title, content, max_cols=5, conte
 
 	attr_list = [
 		curses.A_BOLD,
-		curses.A_UNDERLINE,
+		# curses.A_UNDERLINE,
 		#curses.A_STANDOUT,
 		# curses.A_BLINK,
 		# curses.A_HORIZONTAL,
@@ -279,19 +282,19 @@ def create_panel(window, start_row, start_col, title, content, max_cols=5, conte
 
 	for line in title_art:
 		line = line.strip()
-		startcol = int(buff_cnt*0.75) + (inner_text_offset//2)
-		if lbls_font == 'small' or lbls_font == 'standard':
+		startcol = int(buff_cnt*0.75) + (inner_text_offset//3)
+		if title_art_font == 'small' or title_art_font == 'standard':
 			if line == title_art[0].strip():
 				startcol += 1
 			elif line == title_art[len(title_art)-1].strip():
 				startcol += 14
-				if lbls_font == 'standard':
+				if title_art_font == 'standard':
 					startcol += 3
 		panel.addstr(row_cnt, startcol, line, attr)
 		row_cnt+=1
 	#row_cnt+=1
 	panel.addstr(row_cnt, inner_text_offset-1, '~'*((panel_w-inner_text_offset*2)+2)) #, attr)
-	#row_cnt+=1
+	row_cnt+=1
 
 	item_cnt = 0
 	if content:
@@ -316,27 +319,153 @@ def create_panel(window, start_row, start_col, title, content, max_cols=5, conte
 	panel.attrset(curses.color_pair(WHITE))
 	return panel_w
 
+def create_heaps_panel(window, start_row, start_col, title, content, max_rows=4, content_color=GREEN, title_art_font=heaps_lbls_font):
+	panel = None
+	title_art = get_art(title_art_font, title)
+	title_art_lines = len(title_art)
+
+	screen_height, screen_width = max_dimensions(window)
+	"""
+	panel_h = screen_height - start_row + 1 #3
+	div_h = divided_row_height(window, max(max_rows, len(content))) #- 2
+	# if len(content) < 4:
+	# 	div_h -= 1
+	if panel_h > div_h:
+		panel_h = div_h
+	if panel_h < len(content):
+		panel_h = len(content)+3
+	"""
+	panel_h = len(content[0]) + 4
+
+	# panel_w = longest_str(content)
+	panel_w = screen_width - 2
+
+	while (start_col+panel_w) > (screen_width):
+		#panel_w -= 1
+		start_col -= 1
+	try:
+		panel = window.derwin(panel_h, panel_w, start_row, start_col)
+	except:
+		return panel_w 
+	if panel is None:
+		return panel_w
+
+	attr_list = [
+		curses.A_BOLD,
+		# curses.A_UNDERLINE,
+		#curses.A_STANDOUT,
+		# curses.A_BLINK,
+		# curses.A_HORIZONTAL,
+		# curses.A_LEFT,
+		# curses.A_LOW,
+		# curses.A_VERTICAL,
+	]
+	attr = curses.color_pair(content_color)
+	panel.attrset(attr)
+	for a in attr_list:
+		attr |= a
+	#panel.attrset(attr)
+	#panel.attrset(curses.color_pair(content_color))
+	#panel.attroff(attr_list[])
+
+	ls=curses.ACS_PLUS #LTEE
+	rs=curses.ACS_PLUS #RTEE
+	ts=curses.ACS_HLINE #curses.ACS_PLMINUS
+	bs=curses.ACS_HLINE #'='
+	tl=curses.ACS_ULCORNER
+	tr=curses.ACS_URCORNER
+	bl=curses.ACS_SSBB
+	br=curses.ACS_LRCORNER
+	panel.border(ls, rs, ts, bs, tl, tr, bl, br)
+	#panel.border()
+
+	inner_text_offset = 3 #5 
+	row_cnt = 1 #2
+	top = title_art[0].strip()
+	buff_cnt = 0
+	while (len(top)+4) < panel_w:
+		top = ' ' + top + ' '
+		buff_cnt += 1
+
+	for line in title_art:
+		line = line.strip()
+		startcol = int(buff_cnt*0.75) + (inner_text_offset//3)
+		if title_art_font == 'small' or title_art_font == 'standard':
+			if line == title_art[0].strip():
+				startcol += 1
+			elif line == title_art[len(title_art)-1].strip():
+				startcol += 14
+				if title_art_font == 'standard':
+					startcol += 3
+		panel.addstr(row_cnt, startcol, line, attr)
+		row_cnt+=1
+	#row_cnt+=1
+	panel.addstr(row_cnt, inner_text_offset-1, '~'*((panel_w-inner_text_offset*2)+2)) #, attr)
+	# row_cnt+=1
+
+	# item_cnt = 0
+	if content:
+		# inner_text_offset = panel_w // 4
+		## TODO: Maybe try to center text?
+		for row, line in enumerate(content):
+			item_cnt = 0
+			for s in line:
+				nottitle = s != title
+				if len(title.split())>1 and title.split()[1] == s:
+					nottitle = False
+				if nottitle:
+					if len(str(s)) > 1:
+						row_cnt+=1
+						if start_row+row+row_cnt < start_row+panel_h:
+							#attr = (curses.A_BOLD | curses.A_UNDERLINE | curses.A_STANDOUT)
+							# if len(str(s)) == 0 or str(s)[0] == '-':
+							if item_cnt > 0:
+								panel.addstr(row+row_cnt, inner_text_offset+4, str(s).strip(), attr)
+							else:
+								panel.addstr(row+row_cnt, inner_text_offset, str(s).strip(), attr | curses.A_UNDERLINE)
+								# row_cnt+=1
+						else:
+							menu_rows_fit_error = True
+						item_cnt += 1
+					# row_cnt += (LINE_SPACE-1)
+
+	panel.attrset(curses.color_pair(WHITE))
+	return panel_h
+
+### TODO: Show all menu contents as images in wideterm font
+
 def draw_menu(window, menu):
 	global menu_width, menu_toprow
-	ncols = len(menu.keys())
-	next_col_y = len(logo_img) + 1 		# Represents height of logo art file
-	next_col_x = 0 #1  #3
+	nkeys = len(menu.keys())
+	next_y = len(logo_img) + 1 		# Represents height of logo art file
+	next_x = 0 #1  #3
 	# if not FIT_SCREEN:
 	#     if menu_width > 0:
 	#         next_col_x = int((max_dimensions(window)[1] - menu_width) / 2)
 	offset = 0
-	if DEBUG:
-		k = beers_col_lbls[0]
-		offset = create_panel(window, next_col_y, next_col_x, k, menu.get(k), ncols)
-		next_col_x += (offset - 1)
+	# if DEBUG:
+	# 	k = beers_col_lbls[0]
+	# 	offset = create_panel(window, next_col_y, next_col_x, k, menu.get(k), ncols)
+	# 	next_col_x += (offset - 1)
+	# else:
+		# labels = beers_col_lbls if menu_state != HEAPS else heaps_col_lbls
+		# for k in labels:
+		# 	offset = create_panel(window, next_col_y, next_col_x, k, menu.get(k), ncols)
+		# 	next_col_x += (offset - 1)
+
+	if menu_state == HEAPS:
+		for k in heaps_col_lbls:
+			offset = create_heaps_panel(window, next_y, next_x, k, menu.get(k), nkeys)
+			next_y += (offset)
 	else:
 		for k in beers_col_lbls:
-			offset = create_panel(window, next_col_y, next_col_x, k, menu.get(k), ncols)
-			next_col_x += (offset - 1)
+			offset = create_beers_panel(window, next_y, next_x, k, menu.get(k), nkeys)
+			next_x += (offset - 1)
+
 	if menu_width == 0:
-		menu_width = next_col_x
+		menu_width = next_x
 	if menu_toprow == 0:
-		menu_toprow = next_col_y
+		menu_toprow = next_y
 
 
 
@@ -433,6 +562,10 @@ def main(window):
 			menu_state_timestamp = time.time()
 			menu_state = (menu_state + 1) % len(menu_state_list)
 		# state = menu_state_list[menu_state]
+
+		## FOR DEBUG:
+		# menu_state = HEAPS 
+
 		menu = menu_opts[menu_state]
 		draw_menu(window, menu)
 
