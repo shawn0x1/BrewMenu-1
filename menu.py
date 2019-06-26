@@ -10,6 +10,12 @@ from google.auth.transport.requests import Request
 from google.auth.exceptions import TransportError
 from httplib2 import ServerNotFoundError
 
+RPI=0
+UBUNTU=1
+MACOSX=2
+
+CONTROL_OS = RPI
+
 DEBUG = False #True
 
 ########## Google Sheets API section #######################
@@ -138,17 +144,21 @@ def menu_dict():
 
 
 ########## Images & Art section ###################
-logo_text = 'Halfway Crooks :: Beer && Brewing'
+logo_text = 'Halfway Crooks' # :: Brews && Blends'
 prompt_str = "sh-v4.4$ ./halfway_crooks.sh"
 logofonts = ['big', 'script', 'shadow', 'slant', 'smascii12', 'standard']
-logo_font = logofonts[3]
+logo_font = logofonts[0]
 lblfonts = ['future', 'emboss', 'bubble', 'digital', 'mini', 'small', 'smscript', 'smslant', 'standard']
-beers_lbls_font = lblfonts[8] #5
-heaps_lbls_font = 'wideterm' #lblfonts[0]
+beers_lbls_font = 'future' #lblfonts[8] #5
+heaps_lbls_font = lblfonts[1]
 WHITE = 0
 BLACK = 1
 GREEN = 3
-art_dir = os.getcwd() + '/art/'
+
+if CONTROL_OS == RPI or CONTROL_OS == UBUNTU:
+	art_dir = os.environ['HOME'] + '/BrewMenu/art/'
+else:
+	art_dir = os.environ['HOME'] + '/Documents/BrewMenu/art/'
 
 def get_art(font, text):
 	if not os.path.isdir(art_dir):
@@ -156,10 +166,21 @@ def get_art(font, text):
 	art = []
 	split_text = text.strip().lower().split()
 	key_idx = 0
+	is_currency = False
 	if len(split_text) > 1:
-		if '&' in split_text[0] or split_text[0] == '-':
+		if '&' in split_text[0] or '$' in split_text[0]:
 			key_idx = 1
-	key = split_text[key_idx]
+	elif '$' in split_text[0]:
+		# split_text[0] = split_text[0].replace('$','d')
+		split_text[0] = split_text[0].replace('$',"\$")
+		is_currency = True
+	if not is_currency:
+		key = split_text[key_idx]
+	else:
+		key = 'd'+split_text[key_idx][2]
+		text = text.replace('$', '"\$"')
+	if '/' in key:
+		key = key.replace('/', '')
 	art_file = art_dir + key + '_' + font + '_art.txt'
 	if not os.path.isfile(art_file):
 		os.system('figlet -t -f ' + font + ' ' + text + ' > ' + art_file)
@@ -225,9 +246,11 @@ def create_beers_panel(window, start_row, start_col, title, content, max_cols=5,
 	screen_height, screen_width = max_dimensions(window)
 	panel_h = screen_height - start_row + 1 #3
 
-	panel_w = longest_str(content)
-	if panel_w > divided_col_width(window, max_cols):
-		panel_w = divided_col_width(window, max_cols)
+	panel_w = longest_str(content) + 2
+	if panel_w < longest_str(title_art)+2:
+		panel_w = longest_str(title_art)+2
+	# if panel_w > divided_col_width(window, max_cols):
+	panel_w = divided_col_width(window, max_cols)
 
 	# if not FIT_SCREEN:
 	# 	trim = max_dimensions(window)[1] // 20
@@ -290,6 +313,9 @@ def create_beers_panel(window, start_row, start_col, title, content, max_cols=5,
 				startcol += 14
 				if title_art_font == 'standard':
 					startcol += 3
+		elif title_art_font == 'future' and title.lower() == 'type':
+			if line != title_art[0].strip():
+				startcol += 1
 		panel.addstr(row_cnt, startcol, line, attr)
 		row_cnt+=1
 	#row_cnt+=1
@@ -304,14 +330,24 @@ def create_beers_panel(window, start_row, start_col, title, content, max_cols=5,
 				if len(title.split())>1 and title.split()[1] == s:
 					nottitle = False
 				if nottitle:
+					s_img = get_art('wideterm', s)
 					if len(str(s)) > 1:
 						row_cnt+=1
 						if start_row+row+row_cnt < start_row+panel_h:
 							#attr = (curses.A_BOLD | curses.A_UNDERLINE | curses.A_STANDOUT)
+
+							## With contents as plaintext:
 							if len(str(s)) == 0 or str(s)[0] == '-':
 								panel.addstr(row+row_cnt, inner_text_offset, str(s).strip())
 							else:
 								panel.addstr(row+row_cnt, inner_text_offset, str(s).strip(), attr)
+
+							## With contents as figlet image files:
+							# s_img = get_art('wideterm', s)
+							# for r in s_img:
+							# 	panel.addstr(row+row_cnt, inner_text_offset, r, attr)
+							# 	row_cnt += 1
+
 						else:
 							menu_rows_fit_error = True
 					row_cnt += (LINE_SPACE-1)
@@ -335,7 +371,7 @@ def create_heaps_panel(window, start_row, start_col, title, content, max_rows=4,
 	if panel_h < len(content):
 		panel_h = len(content)+3
 	"""
-	panel_h = len(content[0]) + 4
+	panel_h = len(content[0]) + 6 #4
 
 	# panel_w = longest_str(content)
 	panel_w = screen_width - 2
@@ -418,12 +454,23 @@ def create_heaps_panel(window, start_row, start_col, title, content, max_rows=4,
 						row_cnt+=1
 						if start_row+row+row_cnt < start_row+panel_h:
 							#attr = (curses.A_BOLD | curses.A_UNDERLINE | curses.A_STANDOUT)
-							# if len(str(s)) == 0 or str(s)[0] == '-':
+							
+							## Writing contents as plaintext:
 							if item_cnt > 0:
 								panel.addstr(row+row_cnt, inner_text_offset+4, str(s).strip(), attr)
 							else:
 								panel.addstr(row+row_cnt, inner_text_offset, str(s).strip(), attr | curses.A_UNDERLINE)
-								# row_cnt+=1
+
+							## Writing contents as figlet image file:
+							# s_img = get_art('wideterm', s)
+							# if item_cnt > 0:
+							# 	for r in s_img:
+							# 		panel.addstr(row+row_cnt, inner_text_offset+4, r, attr)
+							# 		row_cnt+=1
+							# else:
+							# 	for r in s_img:
+							# 		panel.addstr(row+row_cnt, inner_text_offset, r, attr | curses.A_UNDERLINE)
+							# 		row_cnt+=1
 						else:
 							menu_rows_fit_error = True
 						item_cnt += 1
