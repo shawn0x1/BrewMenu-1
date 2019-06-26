@@ -155,10 +155,12 @@ WHITE = 0
 BLACK = 1
 GREEN = 3
 
+
 if CONTROL_OS == RPI or CONTROL_OS == UBUNTU:
 	art_dir = os.environ['HOME'] + '/BrewMenu/art/'
 else:
 	art_dir = os.environ['HOME'] + '/Documents/BrewMenu/art/'
+
 
 def get_art(font, text):
 	if not os.path.isdir(art_dir):
@@ -348,6 +350,7 @@ def create_beers_panel(window, start_row, start_col, title, content, max_cols=5,
 							# 	panel.addstr(row+row_cnt, inner_text_offset, r, attr)
 							# 	row_cnt += 1
 
+
 						else:
 							menu_rows_fit_error = True
 					row_cnt += (LINE_SPACE-1)
@@ -471,6 +474,7 @@ def create_heaps_panel(window, start_row, start_col, title, content, max_rows=4,
 							# 	for r in s_img:
 							# 		panel.addstr(row+row_cnt, inner_text_offset, r, attr | curses.A_UNDERLINE)
 							# 		row_cnt+=1
+
 						else:
 							menu_rows_fit_error = True
 						item_cnt += 1
