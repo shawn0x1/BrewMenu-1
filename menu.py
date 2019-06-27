@@ -14,11 +14,17 @@ RPI=0
 UBUNTU=1
 MACOSX=2
 
-CONTROL_OS = RPI
+CONTROL_OS = RPI #MACOSX
+
+SHOW_BEERS_WIDETERM = True and (CONTROL_OS != RPI)
+SHOW_HEAPS_WIDETERM = True and (CONTROL_OS != RPI)
 
 DEBUG = False #True
 
 ########## Google Sheets API section #######################
+FILEPATH = (os.environ['HOME'] + '/BrewMenu/') if CONTROL_OS!=MACOSX else (os.environ['HOME'] + '/Documents/BrewMenu/')
+CREDFILE = FILEPATH + 'credentials.json'
+TOKENFILE = FILEPATH + 'token.pickle'
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 # LOGO_RANGE = 'A1:B1'
 #COL1_RANGE = 'A2:A14'
@@ -31,9 +37,11 @@ beers_ranges1_raw = ('A3:A10', 'B3:B10', 'C3:C10', 'D3:D10', 'E3:E10')
 beers_ranges2_raw = ('A11:A17', 'B11:B17', 'C11:C17', 'D11:D17', 'E11:E17')
 beers_col_lbls = ('Name', 'Type', 'ABV', 'Pour', 'Cost')
 # heaps_range = 'heaps!A1:A24'
-heaps_ranges = ('heaps!A2:A4', 'heaps!A7:A10', 'heaps!A13:A16', 'heaps!A19:A24')
+# heaps_ranges = ('heaps!A2:A4', 'heaps!A7:A10', 'heaps!A13:A16', 'heaps!A19:A24')
+heaps_ranges = ('heaps!A2:A7', 'heaps!A10:A12', 'heaps!A15:A18')
 heaps_ranges_raw = ('A2:A4', 'A7:A10', 'A13:A16', 'A19:A24')
-heaps_col_lbls = ('Double Fried Belgian Fries', 'Cheese', 'Meat', 'Heaps Savory New Zealand Pies and Rolls')
+# heaps_col_lbls = ('Double Fried Belgian Fries', 'Cheese', 'Meat', 'Heaps Savory New Zealand Pies and Rolls')
+heaps_col_lbls = ('Heaps Savory New Zealand Pies and Rolls', 'Double Fried Belgian Fries', 'Cheese')
 
 sheet_url = "https://docs.google.com/spreadsheets/d/13AHRFbjuJ1F6LEDU5o2949DCyCFtPAxXZgHg2fLH_jc/edit?ts=5c8913ff#gid=0"
 beers_url = 'https://docs.google.com/spreadsheets/d/13AHRFbjuJ1F6LEDU5o2949DCyCFtPAxXZgHg2fLH_jc/edit?ts=5c8913ff#gid=0'
@@ -48,7 +56,7 @@ SHEET_ID = extract_id(sheet_url)
 BEERS_ID = extract_id(beers_url)
 HEAPS_ID = extract_id(heaps_url)
 
-def log_debug(msg,filename='debug.log'):
+def log_debug(msg,filename=str(FILEPATH+'debug.log')):
 	#print(msg)
 	cmd = 'echo "{}" >> {}'.format(msg, filename)
 	os.system(cmd)
@@ -69,8 +77,8 @@ def validate_service():
 	# The file token.pickle stores the user's access and refresh tokens, and is
 	# created automatically when the authorization flow completes for the first
 	# time.
-	if os.path.exists('token.pickle'):
-		with open('token.pickle', 'rb') as token:
+	if os.path.exists(TOKENFILE):
+		with open(TOKENFILE, 'rb') as token:
 			try:
 				creds = pickle.load(token)
 			except UnicodeDecodeError:
@@ -85,10 +93,10 @@ def validate_service():
 				log_debug('TransportError caught: Failed to establish connection\n')
 				sys.exit(2)
 		else:
-			flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
+			flow = InstalledAppFlow.from_client_secrets_file(CREDFILE, SCOPES)
 			creds = flow.run_local_server()
 		# Save the credentials for the next run
-		with open('token.pickle', 'wb') as token:
+		with open(TOKENFILE, 'wb') as token:
 			pickle.dump(creds, token)
 	try:
 		service = build('sheets', 'v4', credentials=creds) #, developerKey=API_KEY)
@@ -156,11 +164,12 @@ BLACK = 1
 GREEN = 3
 
 
-if CONTROL_OS == RPI or CONTROL_OS == UBUNTU:
-	art_dir = os.environ['HOME'] + '/BrewMenu/art/'
-else:
-	art_dir = os.environ['HOME'] + '/Documents/BrewMenu/art/'
+# if CONTROL_OS == RPI or CONTROL_OS == UBUNTU:
+# 	art_dir = os.environ['HOME'] + '/BrewMenu/art/'
+# else:
+# 	art_dir = os.environ['HOME'] + '/Documents/BrewMenu/art/'
 
+art_dir = FILEPATH + 'art/'
 
 def get_art(font, text):
 	if not os.path.isdir(art_dir):
@@ -185,7 +194,13 @@ def get_art(font, text):
 		key = key.replace('/', '')
 	art_file = art_dir + key + '_' + font + '_art.txt'
 	if not os.path.isfile(art_file):
-		os.system('figlet -t -f ' + font + ' ' + text + ' > ' + art_file)
+		# print(art_file + ' Does not exist, trying figlet...')
+		# os.system('figlet -tk -f ' + font + ' "' + text + '" > ' + art_file)
+		os.system('figlet -tS -f ' + font + ' "' + text + '" > ' + art_file)
+	if not os.path.isfile(art_file) or os.stat(art_file).st_size == 0:
+		# print(art_file + ' Does not exist, trying toilet...')
+		# os.system('toilet -tk -f ' + font + ' "' + text + '" > ' + art_file)
+		os.system('toilet -tS -f ' + font + ' "' + text + '" > ' + art_file)
 	with open(art_file) as f:
 		art = f.readlines()
 	return art
@@ -320,36 +335,38 @@ def create_beers_panel(window, start_row, start_col, title, content, max_cols=5,
 				startcol += 1
 		panel.addstr(row_cnt, startcol, line, attr)
 		row_cnt+=1
-	#row_cnt+=1
+	row_cnt+=1
 	panel.addstr(row_cnt, inner_text_offset-1, '~'*((panel_w-inner_text_offset*2)+2)) #, attr)
 	row_cnt+=1
 
 	item_cnt = 0
 	if content:
 		for row, line in enumerate(content):
+			# log_debug(line, )
+			# s_img = get_art('wideterm', line)
 			for s in line:
 				nottitle = s != title
 				if len(title.split())>1 and title.split()[1] == s:
 					nottitle = False
 				if nottitle:
-					s_img = get_art('wideterm', s)
+					# s_img = get_art('wideterm', s)
 					if len(str(s)) > 1:
 						row_cnt+=1
 						if start_row+row+row_cnt < start_row+panel_h:
 							#attr = (curses.A_BOLD | curses.A_UNDERLINE | curses.A_STANDOUT)
 
-							## With contents as plaintext:
-							if len(str(s)) == 0 or str(s)[0] == '-':
-								panel.addstr(row+row_cnt, inner_text_offset, str(s).strip())
+							if not SHOW_BEERS_WIDETERM:
+								## With contents as plaintext:
+								if len(str(s)) == 0 or str(s)[0] == '-':
+									panel.addstr(row+row_cnt, inner_text_offset, str(s).strip())
+								else:
+									panel.addstr(row+row_cnt, inner_text_offset, str(s).strip(), attr)
 							else:
-								panel.addstr(row+row_cnt, inner_text_offset, str(s).strip(), attr)
-
-							## With contents as figlet image files:
-							# s_img = get_art('wideterm', s)
-							# for r in s_img:
-							# 	panel.addstr(row+row_cnt, inner_text_offset, r, attr)
-							# 	row_cnt += 1
-
+								## With contents as figlet image files:
+								s_img = get_art('wideterm', s)
+								for r in s_img:
+									panel.addstr(row+row_cnt, inner_text_offset, r, attr)
+									row_cnt += 1
 
 						else:
 							menu_rows_fit_error = True
@@ -458,22 +475,27 @@ def create_heaps_panel(window, start_row, start_col, title, content, max_rows=4,
 						if start_row+row+row_cnt < start_row+panel_h:
 							#attr = (curses.A_BOLD | curses.A_UNDERLINE | curses.A_STANDOUT)
 							
-							## Writing contents as plaintext:
-							if item_cnt > 0:
-								panel.addstr(row+row_cnt, inner_text_offset+4, str(s).strip(), attr)
+							if not SHOW_HEAPS_WIDETERM:
+								## Writing contents as plaintext:
+								if item_cnt > 0:
+									panel.addstr(row+row_cnt, inner_text_offset+4, str(s).strip(), attr)
+								else:
+									panel.addstr(row+row_cnt, inner_text_offset, str(s).strip(), attr | curses.A_UNDERLINE)
 							else:
-								panel.addstr(row+row_cnt, inner_text_offset, str(s).strip(), attr | curses.A_UNDERLINE)
-
-							## Writing contents as figlet image file:
-							# s_img = get_art('wideterm', s)
-							# if item_cnt > 0:
-							# 	for r in s_img:
-							# 		panel.addstr(row+row_cnt, inner_text_offset+4, r, attr)
-							# 		row_cnt+=1
-							# else:
-							# 	for r in s_img:
-							# 		panel.addstr(row+row_cnt, inner_text_offset, r, attr | curses.A_UNDERLINE)
-							# 		row_cnt+=1
+								## Writing contents as figlet image file:
+								s_img = get_art('wideterm', s)
+								if item_cnt > 0:
+									for r in s_img:
+										try:
+											panel.addstr(row+row_cnt, inner_text_offset+4, r, attr)
+										except:
+											log_debug(r, 'heap_addstr.err')
+											sys.exit()
+										row_cnt+=1
+								else:
+									for r in s_img:
+										panel.addstr(row+row_cnt, inner_text_offset, r, attr | curses.A_UNDERLINE)
+										row_cnt+=1
 
 						else:
 							menu_rows_fit_error = True
@@ -505,6 +527,7 @@ def draw_menu(window, menu):
 		# 	next_col_x += (offset - 1)
 
 	if menu_state == HEAPS:
+		# log_debug(menu, 'heaps_menu.log')
 		for k in heaps_col_lbls:
 			offset = create_heaps_panel(window, next_y, next_x, k, menu.get(k), nkeys)
 			next_y += (offset)
@@ -580,7 +603,6 @@ def scroll_logo(window, image):
 	logo_end_x += 3
 
 
-
 def main(window):
 	global logo_img, menu_rows_fit_error, LINE_SPACE, logo_end_x, menu_state #, menu_state_timestamp
 	curses.init_pair(GREEN, curses.COLOR_GREEN, curses.COLOR_BLACK)
@@ -618,6 +640,10 @@ def main(window):
 		# menu_state = HEAPS 
 
 		menu = menu_opts[menu_state]
+		if not any(menu.values()):
+			menu_state_timestamp = time.time()
+			menu_state = (menu_state + 1) % len(menu_state_list)
+			menu = menu_opts[menu_state]
 		draw_menu(window, menu)
 
 		# if menu_rows_fit_error:
