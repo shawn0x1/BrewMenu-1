@@ -1,3 +1,0 @@
-$   ./updateBrewMenu
-$   sudo python3 setup.py
-$   . brewmenu
