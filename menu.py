@@ -397,7 +397,7 @@ def create_heaps_panel(window, start_row, start_col, title, content, max_rows=4,
 	if panel_h < len(content):
 		panel_h = len(content)+3
 	"""
-	panel_h = len(content[0]) + 6 #4
+	panel_h = len(content[0]) + 7 #6 #4
 
 	# panel_w = longest_str(content)
 	panel_w = screen_width - 2
@@ -516,7 +516,7 @@ def create_heaps_panel(window, start_row, start_col, title, content, max_rows=4,
 def draw_menu(window, menu):
 	global menu_width, menu_toprow
 	nkeys = len(menu.keys())
-	next_y = len(logo_img) + 1 		# Represents height of logo art file
+	next_y = len(logo_img) #+ 1 		# Represents height of logo art file
 	next_x = 0 #1  #3
 	# if not FIT_SCREEN:
 	#     if menu_width > 0:
