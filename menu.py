@@ -155,10 +155,10 @@ def menu_dict():
 logo_text = 'Halfway Crooks' # :: Brews && Blends'
 prompt_str = "sh-v4.4$ ./halfway_crooks.sh"
 logofonts = ['big', 'script', 'shadow', 'slant', 'smascii12', 'standard']
-logo_font = logofonts[0]
+logo_font = logofonts[4]
 lblfonts = ['future', 'emboss', 'bubble', 'digital', 'mini', 'small', 'smscript', 'smslant', 'standard']
-beers_lbls_font = 'future' #lblfonts[8] #5
-heaps_lbls_font = lblfonts[1]
+beers_lbls_font = lblfonts[7] #5
+heaps_lbls_font = lblfonts[4]
 WHITE = 0
 BLACK = 1
 GREEN = 3
@@ -196,11 +196,17 @@ def get_art(font, text):
 	if not os.path.isfile(art_file):
 		# print(art_file + ' Does not exist, trying figlet...')
 		# os.system('figlet -tk -f ' + font + ' "' + text + '" > ' + art_file)
-		os.system('figlet -tS -f ' + font + ' "' + text + '" > ' + art_file)
+		if font == 'wideterm':
+			os.system('figlet -tS -f ' + font + ' "' + text + '" > ' + art_file)
+		else:
+			os.system('figlet -t -f ' + font + ' "' + text + '" > ' + art_file)
 	if not os.path.isfile(art_file) or os.stat(art_file).st_size == 0:
 		# print(art_file + ' Does not exist, trying toilet...')
 		# os.system('toilet -tk -f ' + font + ' "' + text + '" > ' + art_file)
-		os.system('toilet -tS -f ' + font + ' "' + text + '" > ' + art_file)
+		if font == 'wideterm':
+			os.system('toilet -tS -f ' + font + ' "' + text + '" > ' + art_file)
+		else:
+			os.system('toilet -t -f ' + font + ' "' + text + '" > ' + art_file)
 	with open(art_file) as f:
 		art = f.readlines()
 	return art
