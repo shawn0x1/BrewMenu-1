@@ -1,3 +1,4 @@
+
 import pickle
 import sys
 import os
@@ -41,7 +42,7 @@ beers_col_lbls = ('Name', 'Type', 'ABV', 'Pour', 'Cost')
 heaps_ranges = ('heaps!A2:A7', 'heaps!A10:A12', 'heaps!A15:A18')
 heaps_ranges_raw = ('A2:A4', 'A7:A10', 'A13:A16', 'A19:A24')
 # heaps_col_lbls = ('Double Fried Belgian Fries', 'Cheese', 'Meat', 'Heaps Savory New Zealand Pies and Rolls')
-heaps_col_lbls = ('Heaps Pies', 'Belgian Fries', 'Cheese')
+heaps_col_lbls = ('Heaps Pies', 'Double Fried Belgian Fries', 'Cheese')
 
 sheet_url = "https://docs.google.com/spreadsheets/d/13AHRFbjuJ1F6LEDU5o2949DCyCFtPAxXZgHg2fLH_jc/edit?ts=5c8913ff#gid=0"
 beers_url = 'https://docs.google.com/spreadsheets/d/13AHRFbjuJ1F6LEDU5o2949DCyCFtPAxXZgHg2fLH_jc/edit?ts=5c8913ff#gid=0'
@@ -155,10 +156,10 @@ def menu_dict():
 logo_text = 'Halfway Crooks' # :: Brews && Blends'
 prompt_str = "sh-v4.4$ ./halfway_crooks.sh"
 logofonts = ['big', 'script', 'shadow', 'slant', 'smascii12', 'standard']
-logo_font = logofonts[4]
+logo_font = 'standard' #'letter' #logofonts[3]
 lblfonts = ['future', 'emboss', 'bubble', 'digital', 'mini', 'small', 'smscript', 'smslant', 'standard']
-beers_lbls_font = lblfonts[3] #5
-heaps_lbls_font = lblfonts[5]
+beers_lbls_font = 'pagga' #lblfonts[2] #5
+heaps_lbls_font = 'term' #lblfonts[5]
 WHITE = 0
 BLACK = 1
 GREEN = 3
@@ -226,13 +227,13 @@ def longest_str(image): 		# Determine max width of an ASCII art file   ## ENSURE
 	return max_len
 
 ########## Curses TUI section ########################
-LOOP_SLEEP = 0.15
+LOOP_SLEEP = 0.25  #0.15
 LINE_SPACE = 3
 menu_rows_fit_error = False
 
 menu_width = 0
 menu_toprow = 0
-logo_x = 0       # <-- formerly 'col_offset = terminal_width() - 1'
+logo_x = 20 #0       # <-- formerly 'col_offset = terminal_width() - 1'
 logo_end_x = 0
 logo_y = 0
 logo_img = None
@@ -328,7 +329,8 @@ def create_beers_panel(window, start_row, start_col, title, content, max_cols=5,
 
 	for line in title_art:
 		line = line.strip()
-		startcol = int(buff_cnt*0.75) + (inner_text_offset//3)
+		#startcol = int(buff_cnt*0.75) + (inner_text_offset//3)
+		startcol = int(buff_cnt) + (inner_text_offset//3)
 		if title_art_font == 'small' or title_art_font == 'standard':
 			if line == title_art[0].strip():
 				startcol += 1
@@ -397,7 +399,7 @@ def create_heaps_panel(window, start_row, start_col, title, content, max_rows=4,
 	if panel_h < len(content):
 		panel_h = len(content)+3
 	"""
-	panel_h = len(content[0]) + 7 #6 #4
+	panel_h = len(content[0]) + 5 #7 #6 #4
 
 	# panel_w = longest_str(content)
 	panel_w = screen_width - 2
@@ -451,7 +453,7 @@ def create_heaps_panel(window, start_row, start_col, title, content, max_rows=4,
 
 	for line in title_art:
 		line = line.strip()
-		startcol = int(buff_cnt*0.75) + (inner_text_offset//3)
+		startcol = int(buff_cnt) + (inner_text_offset//3)
 		if title_art_font == 'small' or title_art_font == 'standard':
 			if line == title_art[0].strip():
 				startcol += 1
@@ -459,11 +461,11 @@ def create_heaps_panel(window, start_row, start_col, title, content, max_rows=4,
 				startcol += 14
 				if title_art_font == 'standard':
 					startcol += 3
-		panel.addstr(row_cnt, startcol, line, attr)
+		panel.addstr(row_cnt, startcol, line, attr|curses.A_BOLD|curses.A_UNDERLINE|curses.A_STANDOUT)
 		row_cnt+=1
-	#row_cnt+=1
+	row_cnt+=1
 	panel.addstr(row_cnt, inner_text_offset-1, '~'*((panel_w-inner_text_offset*2)+2)) #, attr)
-	# row_cnt+=1
+	#row_cnt+=1
 
 	# item_cnt = 0
 	if content:
@@ -516,7 +518,7 @@ def create_heaps_panel(window, start_row, start_col, title, content, max_rows=4,
 def draw_menu(window, menu):
 	global menu_width, menu_toprow
 	nkeys = len(menu.keys())
-	next_y = len(logo_img) #+ 1 		# Represents height of logo art file
+	next_y = len(logo_img) + 1 		# Represents height of logo art file
 	next_x = 0 #1  #3
 	# if not FIT_SCREEN:
 	#     if menu_width > 0:
@@ -618,7 +620,7 @@ def main(window):
 	toggle_cursor = False
 	toggle_char = '_'
 	scroll_cnt = 0
-	scroll_speed = 5
+	scroll_speed = 7  #5
 	logo_img = get_art(logo_font, logo_text)
 	logo_end_x = logo_x + longest_str(logo_img)
 
@@ -635,7 +637,8 @@ def main(window):
 		window.addch(0,1+prompt_len,toggle_char, curses.color_pair(WHITE))# | curses.A_BLINK)
 		#window.addch(window.getmaxyx()[0]-1,1+prompt_len,toggle_char, curses.color_pair(WHITE))# | curses.A_BLINK)
 
-		draw_logo(window, logo_img, attrs=[curses.A_BOLD]) #, curses.A_UNDERLINE]) #, curses.A_REVERSE]) #, curses.A_BLINK])
+		if scroll_cnt % scroll_speed != 0:
+			draw_logo(window, logo_img, attrs=[curses.A_BOLD]) #, curses.A_UNDERLINE]) #, curses.A_REVERSE]) #, curses.A_BLINK])
 
 		if time.time() - menu_state_timestamp >= MENU_CHANGE_PERIOD:
 			menu_state_timestamp = time.time()
@@ -656,8 +659,8 @@ def main(window):
 		# 	LINE_SPACE -= 1
 		# 	menu_rows_fit_error = False
 
-		if scroll_cnt % scroll_speed == 0:
-			scroll_logo(window, logo_img)
+		#if scroll_cnt % scroll_speed == 0:
+		#	scroll_logo(window, logo_img)
 
 		window.refresh()
 		time.sleep(LOOP_SLEEP)
