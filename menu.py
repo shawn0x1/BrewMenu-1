@@ -681,7 +681,7 @@ if __name__ == '__main__':
 	# curses.wrapper(main)
 	try:
 		scr = curses.initscr()
-	except _curses.error:
+	except:
 		import subprocess
 		subprocess.call(['lxterminal', '--command', 'python3', __file__])
 	else:
