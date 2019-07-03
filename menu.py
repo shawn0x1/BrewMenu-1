@@ -47,6 +47,7 @@ heaps_ranges_raw = ('A2:A4', 'A7:A10', 'A13:A16', 'A19:A24')
 # heaps_col_lbls = ('Double Fried Belgian Fries', 'Cheese', 'Meat', 'Heaps Savory New Zealand Pies and Rolls')
 heaps_col_lbls = ('Heaps Pies', 'Double Fried Belgian Fries', 'Cheese')
 
+
 sheet_url = "https://docs.google.com/spreadsheets/d/13AHRFbjuJ1F6LEDU5o2949DCyCFtPAxXZgHg2fLH_jc/edit?ts=5c8913ff#gid=0"
 beers_url = 'https://docs.google.com/spreadsheets/d/13AHRFbjuJ1F6LEDU5o2949DCyCFtPAxXZgHg2fLH_jc/edit?ts=5c8913ff#gid=0'
 heaps_url = 'https://docs.google.com/spreadsheets/d/13AHRFbjuJ1F6LEDU5o2949DCyCFtPAxXZgHg2fLH_jc/edit?ts=5c8913ff#gid=1702929798'
@@ -162,7 +163,7 @@ logofonts = ['big', 'script', 'shadow', 'slant', 'smascii12', 'standard']
 logo_font = 'standard' #'letter' #logofonts[3]
 lblfonts = ['future', 'emboss', 'bubble', 'digital', 'mini', 'small', 'smscript', 'smslant', 'standard']
 beers_lbls_font = 'pagga' #lblfonts[2] #5
-heaps_lbls_font = 'pagga' #'term' #lblfonts[5]
+heaps_lbls_font = 'term' #lblfonts[5]
 WHITE = 0
 BLACK = 1
 GREEN = 3
@@ -350,6 +351,7 @@ def create_beers_panel(window, start_row, start_col, title, content, max_cols=5,
 	panel.addstr(row_cnt, inner_text_offset-1, '~'*((panel_w-inner_text_offset*2)+2)) #, attr)
 	row_cnt+=1
 
+	inner_text_offset -= 3
 	item_cnt = 0
 	if content:
 		for row, line in enumerate(content):
