@@ -23,7 +23,10 @@ SHOW_HEAPS_WIDETERM = True and (CONTROL_OS != RPI)
 DEBUG = False #True
 
 ########## Google Sheets API section #######################
-FILEPATH = (os.environ['HOME'] + '/BrewMenu/') if CONTROL_OS!=MACOSX else (os.environ['HOME'] + '/Documents/BrewMenu/')
+try:
+	FILEPATH = (os.environ['HOME'] + '/BrewMenu/') if CONTROL_OS!=MACOSX else (os.environ['HOME'] + '/Documents/BrewMenu/')
+except KeyError:
+	FILEPATH = '/home/halfway/BrewMenu/'
 CREDFILE = FILEPATH + 'credentials.json'
 TOKENFILE = FILEPATH + 'token.pickle'
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
