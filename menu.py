@@ -159,7 +159,7 @@ logofonts = ['big', 'script', 'shadow', 'slant', 'smascii12', 'standard']
 logo_font = 'standard' #'letter' #logofonts[3]
 lblfonts = ['future', 'emboss', 'bubble', 'digital', 'mini', 'small', 'smscript', 'smslant', 'standard']
 beers_lbls_font = 'pagga' #lblfonts[2] #5
-heaps_lbls_font = 'term' #lblfonts[5]
+heaps_lbls_font = 'pagga' #'term' #lblfonts[5]
 WHITE = 0
 BLACK = 1
 GREEN = 3
@@ -461,7 +461,7 @@ def create_heaps_panel(window, start_row, start_col, title, content, max_rows=4,
 				startcol += 14
 				if title_art_font == 'standard':
 					startcol += 3
-		panel.addstr(row_cnt, startcol, line, attr|curses.A_BOLD|curses.A_UNDERLINE|curses.A_STANDOUT)
+		panel.addstr(row_cnt, startcol, line, attr|curses.A_BOLD|curses.A_UNDERLINE)
 		row_cnt+=1
 	row_cnt+=1
 	panel.addstr(row_cnt, inner_text_offset-1, '~'*((panel_w-inner_text_offset*2)+2)) #, attr)
