@@ -618,6 +618,7 @@ def scroll_logo(window, image):
 
 def main(window):
 	global logo_img, menu_rows_fit_error, LINE_SPACE, logo_end_x, menu_state #, menu_state_timestamp
+	curses.start_color()
 	curses.init_pair(GREEN, curses.COLOR_GREEN, curses.COLOR_BLACK)
 	curses.curs_set(0)
 	menu_opts = menu_dict()
@@ -685,4 +686,3 @@ if __name__ == '__main__':
 		subprocess.call(['lxterminal', '--command', 'python3', __file__])
 	else:
 		main(scr)
-		
