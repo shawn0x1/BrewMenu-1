@@ -1,4 +1,4 @@
-
+#!/usr/bin/python3
 import pickle
 import sys
 import os
@@ -42,7 +42,7 @@ beers_ranges2_raw = ('A11:A17', 'B11:B17', 'C11:C17', 'D11:D17', 'E11:E17')
 beers_col_lbls = ('Name', 'Type', 'ABV', 'Pour', 'Cost')
 # heaps_range = 'heaps!A1:A24'
 # heaps_ranges = ('heaps!A2:A4', 'heaps!A7:A10', 'heaps!A13:A16', 'heaps!A19:A24')
-heaps_ranges = ('heaps!A2:A7', 'heaps!A10:A12', 'heaps!A15:A18')
+heaps_ranges = ('food!A2:A7', 'food!A10:A12', 'food!A15:A18')
 heaps_ranges_raw = ('A2:A4', 'A7:A10', 'A13:A16', 'A19:A24')
 # heaps_col_lbls = ('Double Fried Belgian Fries', 'Cheese', 'Meat', 'Heaps Savory New Zealand Pies and Rolls')
 heaps_col_lbls = ('Heaps Pies', 'Fries', 'Cheese')
@@ -677,4 +677,12 @@ def cleanup(signum, stack):
 
 if __name__ == '__main__':
 	signal.signal(signal.SIGINT, cleanup)
-	curses.wrapper(main)
+	# curses.wrapper(main)
+	try:
+		scr = curses.initscr()
+	except _curses.error:
+		import subprocess
+		subprocess.call(['lxterminal', '--command', 'python3', __file__])
+	else:
+		main(scr)
+		
