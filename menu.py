@@ -17,8 +17,8 @@ MACOSX=2
 
 CONTROL_OS = RPI #MACOSX
 
-SHOW_BEERS_WIDETERM = True and (CONTROL_OS != RPI)
-SHOW_HEAPS_WIDETERM = True and (CONTROL_OS != RPI)
+SHOW_BEERS_WIDETERM = False #True and (CONTROL_OS != RPI)
+SHOW_HEAPS_WIDETERM = False #True and (CONTROL_OS != RPI)
 
 DEBUG = False #True
 
@@ -27,8 +27,10 @@ try:
 	FILEPATH = (os.environ['HOME'] + '/BrewMenu/') if CONTROL_OS!=MACOSX else (os.environ['HOME'] + '/Documents/BrewMenu/')
 except KeyError:
 	FILEPATH = '/home/halfway/BrewMenu/'
+
 CREDFILE = FILEPATH + 'credentials.json'
 TOKENFILE = FILEPATH + 'token.pickle'
+
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 # LOGO_RANGE = 'A1:B1'
 #COL1_RANGE = 'A2:A14'
@@ -287,16 +289,16 @@ def create_beers_panel(window, start_row, start_col, title, content, max_cols=5,
 	screen_width += 1
 	panel_h = screen_height - start_row + 1 #3
 
-	panel_w = 0
-	for item in content:
-		if len(item) > panel_w:
-			panel_w = len(item)
-	panel_w += 2
-	# panel_w = longest_str(content) + 2
-	# if panel_w < longest_str(title_art)+2:
-	# 	panel_w = longest_str(title_art)+2
+	# panel_w = 0
+	# for item in content:
+	# 	if len(item) > panel_w:
+	# 		panel_w = len(item)
+	# panel_w += 4
+	# # panel_w = longest_str(content) + 2
+	# if panel_w < longest_str(title_art)+4:
+	# 	panel_w = longest_str(title_art)+4
 	# if panel_w > divided_col_width(window, max_cols):
-	# panel_w = divided_col_width(window, max_cols)
+	panel_w = divided_col_width(window, max_cols)
 
 	# if not FIT_SCREEN:
 	# 	trim = max_dimensions(window)[1] // 20
@@ -344,18 +346,18 @@ def create_beers_panel(window, start_row, start_col, title, content, max_cols=5,
 	panel.border(ls, rs, ts, bs, tl, tr, bl, br)
 	#panel.border()
 
-	inner_text_offset = 5  #3
+	inner_text_offset = 4 #5  #3
 	row_cnt = 1 #2
 	top = title_art[0].strip()
-	buff_cnt = 0
+	pad_cnt = 0
 	while (len(top)+4) < panel_w:
 		top = ' ' + top + ' '
-		buff_cnt += 1
+		pad_cnt += 1
 
 	for line in title_art:
 		line = line.strip()
-		#startcol = int(buff_cnt*0.75) + (inner_text_offset//3)
-		startcol = int(buff_cnt) + (inner_text_offset//3)
+		#startcol = int(pad_cnt*0.75) + (inner_text_offset//3)
+		startcol = int(pad_cnt) + (inner_text_offset//3)
 		if title_art_font == 'small' or title_art_font == 'standard':
 			if line == title_art[0].strip():
 				startcol += 1
@@ -369,49 +371,55 @@ def create_beers_panel(window, start_row, start_col, title, content, max_cols=5,
 		panel.addstr(row_cnt, startcol, line, attr)
 		row_cnt+=1
 	row_cnt+=1
-	panel.addstr(row_cnt, inner_text_offset-1, '~'*((panel_w-inner_text_offset*2)+2)) #, attr)
+	# bar_len = ((panel_w - (inner_text_offset*2)) + 2)
+	bar_start = (inner_text_offset // 2)
+	bar_len = (panel_w // 2) - bar_start
+
+	# log_debug('panel_w={}, bar_len={}'.format(panel_w,bar_len), 'beer_panel_w.debug')
+	panel.addstr(row_cnt, bar_start, '~'*bar_len) #, attr)
 	row_cnt+=2 #1
 
-	inner_text_offset -= 3
+	inner_text_offset -= 1
 
-	for row, line in enumerate(content):
-		row_cnt += 1
-		if start_row+row+row_cnt < start_row+panel_h:
-			panel.addstr(row+row_cnt, inner_text_offset, line.strip(), attr)
-		row_cnt += LINE_SPACE
+	# for row, line in enumerate(content):
+	# 	row_cnt += 1
+	# 	if start_row+row+row_cnt < start_row+panel_h:
+	# 		inner_text_offset = (panel_w - len(line)) // 2
+	# 		panel.addstr(row+row_cnt, inner_text_offset, line.strip(), attr)
+	# 	row_cnt += LINE_SPACE
 
-	# item_cnt = 0
-	# if content:
-	# 	for row, line in enumerate(content):
-	# 		# log_debug(line, )
-	# 		# s_img = get_art('wideterm', line)
-	# 		for s in line:
-	# 			nottitle = s != title
-	# 			if len(title.split())>1 and title.split()[1] == s:
-	# 				nottitle = False
-	# 			if nottitle:
-	# 				# s_img = get_art('wideterm', s)
-	# 				if len(str(s)) > 1:
-	# 					row_cnt+=1
-	# 					if start_row+row+row_cnt < start_row+panel_h:
-	# 						#attr = (curses.A_BOLD | curses.A_UNDERLINE | curses.A_STANDOUT)
+	item_cnt = 0
+	if content:
+		for row, line in enumerate(content):
+			# log_debug(line, )
+			# s_img = get_art('wideterm', line)
+			for s in line:
+				nottitle = s != title
+				if len(title.split())>1 and title.split()[1] == s:
+					nottitle = False
+				if nottitle:
+					# s_img = get_art('wideterm', s)
+					if len(str(s)) > 1:
+						row_cnt+=1
+						if start_row+row+row_cnt < start_row+panel_h:
+							#attr = (curses.A_BOLD | curses.A_UNDERLINE | curses.A_STANDOUT)
 
-	# 						if not SHOW_BEERS_WIDETERM:
-	# 							## With contents as plaintext:
-	# 							if len(str(s)) == 0 or str(s)[0] == '-':
-	# 								panel.addstr(row+row_cnt, inner_text_offset, str(s).strip())
-	# 							else:
-	# 								panel.addstr(row+row_cnt, inner_text_offset, str(s).strip(), attr)
-	# 						else:
-	# 							## With contents as figlet image files:
-	# 							s_img = get_art('wideterm', s)
-	# 							for r in s_img:
-	# 								panel.addstr(row+row_cnt, inner_text_offset, r, attr)
-	# 								row_cnt += 1
+							if not SHOW_BEERS_WIDETERM:
+								## With contents as plaintext:
+								if len(str(s)) == 0 or str(s)[0] == '-':
+									panel.addstr(row+row_cnt, inner_text_offset, str(s).strip())
+								else:
+									panel.addstr(row+row_cnt, inner_text_offset, str(s).strip(), attr)
+							else:
+								## With contents as figlet image files:
+								s_img = get_art('wideterm', s)
+								for r in s_img:
+									panel.addstr(row+row_cnt, inner_text_offset, r, attr)
+									row_cnt += 1
 
-	# 					else:
-	# 						menu_rows_fit_error = True
-	# 				row_cnt += (LINE_SPACE) #-1)
+						else:
+							menu_rows_fit_error = True
+					row_cnt += (LINE_SPACE) #-1)
 
 	panel.attrset(curses.color_pair(WHITE))
 	return panel_w
@@ -479,14 +487,14 @@ def create_heaps_panel(window, start_row, start_col, title, content, max_rows=4,
 	inner_text_offset = 3 #5 
 	row_cnt = 1 #2
 	top = title_art[0].strip()
-	buff_cnt = 0
+	pad_cnt = 0
 	while (len(top)+4) < panel_w:
 		top = ' ' + top + ' '
-		buff_cnt += 1
+		pad_cnt += 1
 
 	for line in title_art:
 		line = line.strip()
-		startcol = int(buff_cnt) + (inner_text_offset//3)
+		startcol = int(pad_cnt) + (inner_text_offset//3)
 		if title_art_font == 'small' or title_art_font == 'standard':
 			if line == title_art[0].strip():
 				startcol += 1
@@ -662,14 +670,14 @@ def draw_merch_header(window, start_col, content=merch_header_text, content_colo
 	inner_text_offset = 3 #5 
 	row_cnt = 1 #2
 	top = title_art[0].strip()
-	buff_cnt = 0
+	pad_cnt = 0
 	while (len(top)+4) < panel_w:
 		top = ' ' + top + ' '
-		buff_cnt += 1
+		pad_cnt += 1
 
 	for line in title_art:
 		line = line.strip()
-		startcol = int(buff_cnt) + (inner_text_offset//3)
+		startcol = int(pad_cnt) + (inner_text_offset//3)
 		panel.addstr(row_cnt, startcol, line, attr|curses.A_BOLD|curses.A_UNDERLINE)
 		row_cnt+=1
 	row_cnt+=1
@@ -686,29 +694,29 @@ def draw_menu(window, menu):
 	next_x = 3
 	offset = 0
 	
-	contents = []
-	for k in menu.keys():
-		contents.append(menu[k][0])
+	# contents = []
+	# for k in menu.keys():
+	# 	contents.append(menu[k][0])
 
 	if menu_state == HEAPS:
 		# log_debug(menu, 'heaps_menu.log')
-		# for k in menu.keys():
-		# 	offset = create_heaps_panel(window, next_y, next_x, k, menu.get(k), nkeys)
-		for idx, key in enumerate(menu.keys()):
-			offset = create_heaps_panel(window, next_y, next_x, key, contents[idx], nkeys)
+		for k in menu.keys():
+			offset = create_heaps_panel(window, next_y, next_x, k, menu.get(k), nkeys)
+		# for idx, key in enumerate(menu.keys()):
+		# 	offset = create_heaps_panel(window, next_y, next_x, key, contents[idx], nkeys)
 			next_y += (offset - 1)
 	elif menu_state == MERCH:
 		next_y += draw_merch_header(window, next_y)
-		# for k in menu.keys():
-		# 	offset = create_merch_panel(window, next_y, next_x, k, menu.get(k), nkeys)
-		for idx, key in enumerate(menu.keys()):
-			offset = create_merch_panel(window, next_y, next_x, key, contents[idx], nkeys)
+		for k in menu.keys():
+			offset = create_merch_panel(window, next_y, next_x, k, menu.get(k), nkeys)
+		# for idx, key in enumerate(menu.keys()):
+		# 	offset = create_merch_panel(window, next_y, next_x, key, contents[idx], nkeys)
 			next_x += (offset - 1)
 	else:
-		# for k in menu.keys():
-		# 	offset = create_beers_panel(window, next_y, next_x, k, menu.get(k), nkeys)
-		for idx, key in enumerate(menu.keys()):
-			offset = create_beers_panel(window, next_y, next_x, key, contents[idx], nkeys)
+		for k in menu.keys():
+			offset = create_beers_panel(window, next_y, next_x, k, menu.get(k), nkeys)
+		# for idx, key in enumerate(menu.keys()):
+		# 	offset = create_beers_panel(window, next_y, next_x, key, contents[idx], nkeys)
 			# if k.lower() == 'type':
 			# 	next_x += offset
 			# else:
@@ -839,16 +847,16 @@ def main(window):
 
 
 def cleanup(signum, stack):
-	curses.endwin()
+	# curses.endwin()
 	sys.exit(1)
 
 if __name__ == '__main__':
 	signal.signal(signal.SIGINT, cleanup)
-	# curses.wrapper(main)
-	try:
-		scr = curses.initscr()
-	except:
-		import subprocess
-		subprocess.call(['lxterminal', '--command', 'python3', __file__])
-	else:
-		main(scr)
+	curses.wrapper(main)
+	# try:
+	# 	scr = curses.initscr()
+	# except:
+	# 	import subprocess
+	# 	subprocess.call(['lxterminal', '--command', 'python3', __file__])
+	# else:
+	# 	main(scr)
