@@ -374,7 +374,7 @@ def create_beers_panel(window, start_row, start_col, title, content, max_cols=5,
 
 	inner_text_offset -= 3
 
-	for line in content:
+	for row, line in enumerate(content):
 		row_cnt += 1
 		if start_row+row+row_cnt < start_row+panel_h:
 			panel.addstr(row+row_cnt, inner_text_offset, line.strip(), attr)
