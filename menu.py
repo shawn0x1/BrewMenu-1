@@ -20,7 +20,12 @@ CONTROL_OS = RPI #MACOSX
 SHOW_BEERS_WIDETERM = False #True and (CONTROL_OS != RPI)
 SHOW_HEAPS_WIDETERM = False #True and (CONTROL_OS != RPI)
 
-DEBUG = True
+DEBUG_BEER = False
+beer_debug_file = 'beer_menu.debug'
+DEBUG_HEAPS = True
+food_debug_file = 'food_menu.debug'
+DEBUG_MERCH = True
+merch_debug_file = 'merch_menu.debug'
 
 ########## Google Sheets API section #######################
 try:
@@ -126,7 +131,7 @@ def parse(vals): 		# For currency and percentage values
 				subvals.append('{:.1f}%'.format(vv*100))
 			else:
 				subvals.append(vv)
-		retvals.append(subvals)	
+		retvals.append(subvals)
 	return retvals
 
 def menu_dict():
@@ -163,18 +168,23 @@ def menu_dict():
 				merch_cols[i] : parse(read_sheet(sheet, merch_ranges[i], sid=MERCH_ID))
 			}
 		)
-	return (beer_menu1, beer_menu2, heaps_menu, merch_menu)
+	menu_opts = (beer_menu1, beer_menu2, heaps_menu, merch_menu)
+	for opt in menu_opts:
+		if any(opt.values()):
+			for idx, key in enumerate(opt.keys()):
+				opt.update({key : opt[key][0]})
+	return menu_opts
 
 
 ########## Images & Art section ###################
 logo_text = 'Halfway Crooks' # :: Brews && Blends'
 prompt_str = "sh-v4.4$ ./halfway_crooks.sh"
-logofonts = ['big', 'script', 'shadow', 'slant', 'smascii12', 'standard']
+logofonts = ['big', 'script', 'shadow', 'slant', 'smascii12', 'standard', 'mono9']
 logo_font = 'standard' #'letter' #logofonts[3]
 lblfonts = ['future', 'emboss', 'bubble', 'digital', 'mini', 'small', 'smscript', 'smslant', 'standard']
 beers_lbls_font = 'pagga' #lblfonts[2] #5
 heaps_lbls_font = 'term' #lblfonts[5]
-merch_lbl_font = 'letter'
+merch_lbl_font = 'letter'  #'banner'
 #merch_header_text = '*  M E R C H  *'
 merch_header_text = '* MERCH *'
 WHITE = 0
@@ -282,8 +292,9 @@ def divided_col_width(window, ncols):
 def divided_row_height(window, nrows):
 	return max_dimensions(window)[0] // nrows
 
+beer_panel_w_delta = 0
 def create_beers_panel(window, start_row, start_col, title, content, max_cols=5, content_color=GREEN, title_art_font=beers_lbls_font):
-	global menu_rows_fit_error, change_set_menu_width
+	global menu_rows_fit_error, change_set_menu_width, beer_panel_w_delta
 	panel = None
 	title_art = get_art(title_art_font, title)
 	title_art_lines = len(title_art)
@@ -293,11 +304,18 @@ def create_beers_panel(window, start_row, start_col, title, content, max_cols=5,
 
 	panel_w = 0
 	for item in content:
-		if len(item) > panel_w:
-			panel_w = len(item)
-	panel_w += 4
-	if panel_w < longest_str(title_art)+4:
-		panel_w = longest_str(title_art)+4
+		width = len(str(item))
+		if width > panel_w:
+			panel_w = width
+	panel_w += 2 #4
+	if panel_w < longest_str(title_art)+2: #4:
+		panel_w = longest_str(title_art)+2 #4
+
+	if menu_width != 0 and beer_panel_w_delta == 0:
+		beer_panel_w_delta += max((((screen_width - menu_width) // max_cols) - 2), 0) #4), 0)
+		if change_set_menu_width == 0:
+			change_set_menu_width = 1
+	panel_w += beer_panel_w_delta
 
 	while (start_col+panel_w) > (screen_width):
 		start_col -= 1
@@ -307,13 +325,6 @@ def create_beers_panel(window, start_row, start_col, title, content, max_cols=5,
 		return panel_w 
 	if panel is None:
 		return panel_w
-
-	delta = 0
-	if menu_width != 0:
-		delta += max(((menu_width - screen_width // 5) - 4), 0)
-		if change_set_menu_width == 0:
-			change_set_menu_width = 1
-	panel_w += delta
 
 	attr_list = [
 		curses.A_BOLD,
@@ -355,7 +366,7 @@ def create_beers_panel(window, start_row, start_col, title, content, max_cols=5,
 	for line in title_art:
 		line = line.strip()
 		#startcol = int(pad_cnt*0.75) + (inner_text_offset//3)
-		startcol = int(pad_cnt) + (inner_text_offset//3)
+		startcol = int(pad_cnt) #+ (inner_text_offset//3)
 		if title_art_font == 'small' or title_art_font == 'standard':
 			if line == title_art[0].strip():
 				startcol += 1
@@ -366,15 +377,19 @@ def create_beers_panel(window, start_row, start_col, title, content, max_cols=5,
 		elif title_art_font == 'future' and title.lower() == 'type':
 			if line != title_art[0].strip():
 				startcol += 1
-		panel.addstr(row_cnt, startcol, line, attr)
+		try:
+			panel.addstr(row_cnt, startcol, line, attr)
+		except:
+			pass
 		row_cnt+=1
 	row_cnt+=1
 	# bar_len = ((panel_w - (inner_text_offset*2)) + 2)
 	bar_start = (inner_text_offset // 2)
-	bar_len = (panel_w // 2) - bar_start
+	bar_len = panel_w - inner_text_offset 
 
-	if DEBUG:
-		log_debug(f'col_title={title}, panel_w={panel_w}, bar_len={bar_len}, delta={delta}, term_width={screen_width}', 'beer_panel_w.debug')
+	if DEBUG_BEER:
+		log_debug(f'col_title={title}\n\tpanel_w={panel_w}, bar_len={bar_len}, delta={beer_panel_w_delta}' \
+			'\n\tmenu_width={menu_width}, term_width={screen_width}', beer_debug_file)
 	panel.addstr(row_cnt, bar_start, '~'*bar_len) #, attr)
 	row_cnt+=2 #1
 
@@ -382,12 +397,13 @@ def create_beers_panel(window, start_row, start_col, title, content, max_cols=5,
 
 	for row, line in enumerate(content):
 		row_cnt += 1
+		s = str(line).strip()
 		if start_row+row+row_cnt < start_row+panel_h:
 			if CENTER_MENU_TEXT:
-				inner_text_offset = (panel_w - len(line)) // 2
+				inner_text_offset = (panel_w - len(s)) // 2
 			else:
 				inner_text_offset = 4
-			panel.addstr(row+row_cnt, inner_text_offset, line.strip(), attr)
+			panel.addstr(row+row_cnt, inner_text_offset, s, attr)
 		row_cnt += LINE_SPACE
 
 	panel.attrset(curses.color_pair(WHITE))
@@ -409,7 +425,8 @@ def create_heaps_panel(window, start_row, start_col, title, content, max_rows=4,
 	if panel_h < len(content):
 		panel_h = len(content)+3
 	"""
-	panel_h = len(content[0]) + 5 #7 #6 #4
+	# panel_h = len(content[0]) + 5 #7 #6 #4
+	panel_h = len(content) + 5
 
 	# panel_w = longest_str(content)
 	panel_w = screen_width - 2
@@ -663,33 +680,35 @@ def draw_menu(window, menu):
 	next_x = 3
 	offset = 0
 	
-	contents = []
-	for k in menu.keys():
-		contents.append(menu[k][0])
+	# contents = []
+	# for k in menu.keys():
+	# 	contents.append(menu[k][0])
 
 	if menu_state == HEAPS:
 		# log_debug(menu, 'heaps_menu.log')
-		# for k in menu.keys():
-		# 	offset = create_heaps_panel(window, next_y, next_x, k, menu.get(k), nkeys)
-		for idx, key in enumerate(menu.keys()):
-			offset = create_heaps_panel(window, next_y, next_x, key, contents[idx], nkeys)
+		for k in menu.keys():
+			offset = create_heaps_panel(window, next_y, next_x, k, menu.get(k), nkeys)
+		# for idx, key in enumerate(menu.keys()):
+		# 	offset = create_heaps_panel(window, next_y, next_x, key, contents[idx], nkeys)
 			next_y += (offset - 1)
 	elif menu_state == MERCH:
 		next_y += draw_merch_header(window, next_y)
-		# for k in menu.keys():
-		# 	offset = create_merch_panel(window, next_y, next_x, k, menu.get(k), nkeys)
-		for idx, key in enumerate(menu.keys()):
-			offset = create_merch_panel(window, next_y, next_x, key, contents[idx], nkeys)
+		for k in menu.keys():
+			offset = create_merch_panel(window, next_y, next_x, k, menu.get(k), nkeys)
+		# for idx, key in enumerate(menu.keys()):
+		# 	offset = create_merch_panel(window, next_y, next_x, key, contents[idx], nkeys)
 			next_x += (offset - 1)
 	else:
-		# for k in menu.keys():
-		# 	offset = create_beers_panel(window, next_y, next_x, k, menu.get(k), nkeys)
-		for idx, key in enumerate(menu.keys()):
-			offset = create_beers_panel(window, next_y, next_x, key, contents[idx], nkeys)
-			# if k.lower() == 'type':
-			# 	next_x += offset
-			# else:
+		for k in menu.keys():
+			offset = create_beers_panel(window, next_y, next_x, k, menu.get(k), nkeys)
+		# for idx, key in enumerate(menu.keys()):
+		# 	offset = create_beers_panel(window, next_y, next_x, key, contents[idx], nkeys)
+			old_next_x = next_x
 			next_x += (offset - 1)
+			if DEBUG_BEER:
+				log_debug(f'\tstart_x = {old_next_x}, end_x = {next_x}', beer_debug_file) 
+		if DEBUG_BEER:
+			log_debug('\n', beer_debug_file)
 
 	if menu_width == 0 or change_set_menu_width == 1:
 		menu_width = next_x
@@ -775,6 +794,16 @@ def main(window):
 	logo_end_x = logo_x + longest_str(logo_img)
 
 	menu_state_timestamp = time.time()
+
+	if DEBUG_BEER:
+		if os.path.exists(beer_debug_file):
+			os.system(f'rm {beer_debug_file}')
+	if DEBUG_HEAPS:
+		if os.path.exists(food_debug_file): 
+			os.system(f'rm {food_debug_file}')
+	if DEBUG_MERCH:
+		if os.path.exists(merch_debug_file):
+			os.system(f'rm {merch_debug_file}')
 
 	while True:
 		scroll_cnt %= 100
