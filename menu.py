@@ -249,6 +249,7 @@ LINE_SPACE = 3
 menu_rows_fit_error = False
 CENTER_MENU_TEXT = True
 
+change_set_menu_width = 0
 menu_width = 0
 menu_toprow = 0
 logo_x = 20 #0       # <-- formerly 'col_offset = terminal_width() - 1'
@@ -282,7 +283,7 @@ def divided_row_height(window, nrows):
 	return max_dimensions(window)[0] // nrows
 
 def create_beers_panel(window, start_row, start_col, title, content, max_cols=5, content_color=GREEN, title_art_font=beers_lbls_font):
-	global menu_rows_fit_error
+	global menu_rows_fit_error, change_set_menu_width
 	panel = None
 	title_art = get_art(title_art_font, title)
 	title_art_lines = len(title_art)
@@ -310,6 +311,8 @@ def create_beers_panel(window, start_row, start_col, title, content, max_cols=5,
 	delta = 0
 	if menu_width != 0:
 		delta += max(((menu_width - divided_col_width(window, max_cols)) // 5), 0)
+		if change_set_menu_width == 0:
+			change_set_menu_width = 1
 	panel_w += delta
 
 	attr_list = [
@@ -686,7 +689,7 @@ def draw_merch_header(window, start_col, content=merch_header_text, content_colo
 ### TODO: Show all menu contents as images in wideterm font
 
 def draw_menu(window, menu):
-	global menu_width, menu_toprow
+	global menu_width, menu_toprow, change_set_menu_width
 	nkeys = len(menu.keys())
 	next_y = len(logo_img) + 1 		# Represents height of logo art file
 	next_x = 3
@@ -720,8 +723,10 @@ def draw_menu(window, menu):
 			# else:
 			next_x += (offset - 1)
 
-	if menu_width == 0:
+	if menu_width == 0 or change_set_menu_width == 1:
 		menu_width = next_x
+		if change_set_menu_width == 1:
+			change_set_menu_width = 2
 	if menu_toprow == 0:
 		menu_toprow = next_y
 
