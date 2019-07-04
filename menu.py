@@ -20,7 +20,7 @@ CONTROL_OS = RPI #MACOSX
 SHOW_BEERS_WIDETERM = False #True and (CONTROL_OS != RPI)
 SHOW_HEAPS_WIDETERM = False #True and (CONTROL_OS != RPI)
 
-DEBUG = False #True
+DEBUG = True
 
 ########## Google Sheets API section #######################
 try:
@@ -310,7 +310,7 @@ def create_beers_panel(window, start_row, start_col, title, content, max_cols=5,
 
 	delta = 0
 	if menu_width != 0:
-		delta += max((menu_width - screen_width // 5), 0)
+		delta += max(((menu_width - screen_width // 5) - 4), 0)
 		if change_set_menu_width == 0:
 			change_set_menu_width = 1
 	panel_w += delta
@@ -373,10 +373,8 @@ def create_beers_panel(window, start_row, start_col, title, content, max_cols=5,
 	bar_start = (inner_text_offset // 2)
 	bar_len = (panel_w // 2) - bar_start
 
-	if change_set_menu_width < 4:
+	if DEBUG:
 		log_debug(f'col_title={title}, panel_w={panel_w}, bar_len={bar_len}, delta={delta}, term_width={screen_width}', 'beer_panel_w.debug')
-		if change_set_menu_width == 3:
-			change_set_menu_width = 4
 	panel.addstr(row_cnt, bar_start, '~'*bar_len) #, attr)
 	row_cnt+=2 #1
 
@@ -391,39 +389,6 @@ def create_beers_panel(window, start_row, start_col, title, content, max_cols=5,
 				inner_text_offset = 4
 			panel.addstr(row+row_cnt, inner_text_offset, line.strip(), attr)
 		row_cnt += LINE_SPACE
-
-	# item_cnt = 0
-	# if content:
-	# 	for row, line in enumerate(content):
-	# 		# log_debug(line, )
-	# 		# s_img = get_art('wideterm', line)
-	# 		for s in line:
-	# 			nottitle = s != title
-	# 			if len(title.split())>1 and title.split()[1] == s:
-	# 				nottitle = False
-	# 			if nottitle:
-	# 				# s_img = get_art('wideterm', s)
-	# 				if len(str(s)) > 1:
-	# 					row_cnt+=1
-	# 					if start_row+row+row_cnt < start_row+panel_h:
-	# 						#attr = (curses.A_BOLD | curses.A_UNDERLINE | curses.A_STANDOUT)
-
-	# 						if not SHOW_BEERS_WIDETERM:
-	# 							## With contents as plaintext:
-	# 							if len(str(s)) == 0 or str(s)[0] == '-':
-	# 								panel.addstr(row+row_cnt, inner_text_offset, str(s).strip())
-	# 							else:
-	# 								panel.addstr(row+row_cnt, inner_text_offset, str(s).strip(), attr)
-	# 						else:
-	# 							## With contents as figlet image files:
-	# 							s_img = get_art('wideterm', s)
-	# 							for r in s_img:
-	# 								panel.addstr(row+row_cnt, inner_text_offset, r, attr)
-	# 								row_cnt += 1
-
-	# 					else:
-	# 						menu_rows_fit_error = True
-	# 				row_cnt += (LINE_SPACE) #-1)
 
 	panel.attrset(curses.color_pair(WHITE))
 	return panel_w
