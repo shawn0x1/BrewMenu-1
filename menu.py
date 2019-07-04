@@ -828,7 +828,8 @@ def main(window):
 
 
 def cleanup(signum, stack):
-	sys.exit(2)
+	curses.endwin()
+	sys.exit(1)
 
 if __name__ == '__main__':
 	signal.signal(signal.SIGINT, cleanup)
