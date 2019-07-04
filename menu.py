@@ -310,7 +310,7 @@ def create_beers_panel(window, start_row, start_col, title, content, max_cols=5,
 
 	delta = 0
 	if menu_width != 0:
-		delta += max(((menu_width - divided_col_width(window, max_cols)) // 5), 0)
+		delta += max((menu_width - screen_width // 5), 0)
 		if change_set_menu_width == 0:
 			change_set_menu_width = 1
 	panel_w += delta
@@ -373,7 +373,10 @@ def create_beers_panel(window, start_row, start_col, title, content, max_cols=5,
 	bar_start = (inner_text_offset // 2)
 	bar_len = (panel_w // 2) - bar_start
 
-	log_debug(f'col_title={title}, panel_w={panel_w}, bar_len={bar_len}, delta={delta}, term_width={screen_width}', 'beer_panel_w.debug')
+	if change_set_menu_width < 4:
+		log_debug(f'col_title={title}, panel_w={panel_w}, bar_len={bar_len}, delta={delta}, term_width={screen_width}', 'beer_panel_w.debug')
+		if change_set_menu_width == 3:
+			change_set_menu_width = 4
 	panel.addstr(row_cnt, bar_start, '~'*bar_len) #, attr)
 	row_cnt+=2 #1
 
