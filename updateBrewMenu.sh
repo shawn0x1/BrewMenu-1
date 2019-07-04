@@ -8,7 +8,7 @@ then
   if [ -d "/home/halfway/BrewMenu" ]; then
 	rm -rf /home/halfway/BrewMenu
   fi
-  sudo -u halfway git clone https://github.com/VicerExciser/BrewMenu.git
+  git clone https://github.com/VicerExciser/BrewMenu.git
   sleep 3
 else
   echo "github host unreachable: update BrewMenu was unsuccessful."
