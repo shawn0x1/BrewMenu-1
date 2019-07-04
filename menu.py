@@ -309,7 +309,7 @@ def create_beers_panel(window, start_row, start_col, title, content, max_cols=5,
 
 	delta = 0
 	if menu_width != 0:
-		delta += (menu_width // 5) - divided_col_width(window, max_cols)
+		delta += max(((menu_width - divided_col_width(window, max_cols)) // 5), 0)
 	panel_w += delta
 
 	attr_list = [
