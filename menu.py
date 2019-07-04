@@ -15,7 +15,7 @@ RPI=0
 UBUNTU=1
 MACOSX=2
 
-CONTROL_OS = RPI #MACOSX
+CONTROL_OS = MACOSX
 
 SHOW_BEERS_WIDETERM = False #True and (CONTROL_OS != RPI)
 SHOW_HEAPS_WIDETERM = False #True and (CONTROL_OS != RPI)
@@ -247,6 +247,7 @@ def longest_str(image): 		# Determine max width of an ASCII art file   ## ENSURE
 LOOP_SLEEP = 0.25  #0.15
 LINE_SPACE = 3
 menu_rows_fit_error = False
+CENTER_MENU_TEXT = True
 
 menu_width = 0
 menu_toprow = 0
@@ -289,23 +290,15 @@ def create_beers_panel(window, start_row, start_col, title, content, max_cols=5,
 	screen_width += 1
 	panel_h = screen_height - start_row + 1 #3
 
-	# panel_w = 0
-	# for item in content:
-	# 	if len(item) > panel_w:
-	# 		panel_w = len(item)
-	# panel_w += 4
-	# # panel_w = longest_str(content) + 2
-	# if panel_w < longest_str(title_art)+4:
-	# 	panel_w = longest_str(title_art)+4
-	# if panel_w > divided_col_width(window, max_cols):
-	panel_w = divided_col_width(window, max_cols)
-
-	# if not FIT_SCREEN:
-	# 	trim = max_dimensions(window)[1] // 20
-	# 	panel_w -= int(trim)
+	panel_w = 0
+	for item in content:
+		if len(item) > panel_w:
+			panel_w = len(item)
+	panel_w += 4
+	if panel_w < longest_str(title_art)+4:
+		panel_w = longest_str(title_art)+4
 
 	while (start_col+panel_w) > (screen_width):
-		#panel_w -= 1
 		start_col -= 1
 	try:
 		panel = window.derwin(panel_h, panel_w, start_row, start_col)
@@ -314,8 +307,9 @@ def create_beers_panel(window, start_row, start_col, title, content, max_cols=5,
 	if panel is None:
 		return panel_w
 
-	# if title.lower() == 'type':
-	# 	panel_w += 1
+	if menu_width != 0:
+		delta = (menu_width // 5) - divided_col_width(window, max_cols)
+		panel_w += delta
 
 	attr_list = [
 		curses.A_BOLD,
@@ -375,51 +369,54 @@ def create_beers_panel(window, start_row, start_col, title, content, max_cols=5,
 	bar_start = (inner_text_offset // 2)
 	bar_len = (panel_w // 2) - bar_start
 
-	# log_debug('panel_w={}, bar_len={}'.format(panel_w,bar_len), 'beer_panel_w.debug')
+	log_debug('panel_w={}, bar_len={}'.format(panel_w,bar_len), 'beer_panel_w.debug')
 	panel.addstr(row_cnt, bar_start, '~'*bar_len) #, attr)
 	row_cnt+=2 #1
 
-	inner_text_offset -= 1
+	# inner_text_offset -= 3
 
-	# for row, line in enumerate(content):
-	# 	row_cnt += 1
-	# 	if start_row+row+row_cnt < start_row+panel_h:
-	# 		inner_text_offset = (panel_w - len(line)) // 2
-	# 		panel.addstr(row+row_cnt, inner_text_offset, line.strip(), attr)
-	# 	row_cnt += LINE_SPACE
+	for row, line in enumerate(content):
+		row_cnt += 1
+		if start_row+row+row_cnt < start_row+panel_h:
+			if CENTER_MENU_TEXT:
+				inner_text_offset = (panel_w - len(line)) // 2
+			else:
+				inner_text_offset = 4
+			panel.addstr(row+row_cnt, inner_text_offset, line.strip(), attr)
+		row_cnt += LINE_SPACE
 
-	item_cnt = 0
-	if content:
-		for row, line in enumerate(content):
-			# log_debug(line, )
-			# s_img = get_art('wideterm', line)
-			for s in line:
-				nottitle = s != title
-				if len(title.split())>1 and title.split()[1] == s:
-					nottitle = False
-				if nottitle:
-					# s_img = get_art('wideterm', s)
-					if len(str(s)) > 1:
-						row_cnt+=1
-						if start_row+row+row_cnt < start_row+panel_h:
-							#attr = (curses.A_BOLD | curses.A_UNDERLINE | curses.A_STANDOUT)
+	# item_cnt = 0
+	# if content:
+	# 	for row, line in enumerate(content):
+	# 		# log_debug(line, )
+	# 		# s_img = get_art('wideterm', line)
+	# 		for s in line:
+	# 			nottitle = s != title
+	# 			if len(title.split())>1 and title.split()[1] == s:
+	# 				nottitle = False
+	# 			if nottitle:
+	# 				# s_img = get_art('wideterm', s)
+	# 				if len(str(s)) > 1:
+	# 					row_cnt+=1
+	# 					if start_row+row+row_cnt < start_row+panel_h:
+	# 						#attr = (curses.A_BOLD | curses.A_UNDERLINE | curses.A_STANDOUT)
 
-							if not SHOW_BEERS_WIDETERM:
-								## With contents as plaintext:
-								if len(str(s)) == 0 or str(s)[0] == '-':
-									panel.addstr(row+row_cnt, inner_text_offset, str(s).strip())
-								else:
-									panel.addstr(row+row_cnt, inner_text_offset, str(s).strip(), attr)
-							else:
-								## With contents as figlet image files:
-								s_img = get_art('wideterm', s)
-								for r in s_img:
-									panel.addstr(row+row_cnt, inner_text_offset, r, attr)
-									row_cnt += 1
+	# 						if not SHOW_BEERS_WIDETERM:
+	# 							## With contents as plaintext:
+	# 							if len(str(s)) == 0 or str(s)[0] == '-':
+	# 								panel.addstr(row+row_cnt, inner_text_offset, str(s).strip())
+	# 							else:
+	# 								panel.addstr(row+row_cnt, inner_text_offset, str(s).strip(), attr)
+	# 						else:
+	# 							## With contents as figlet image files:
+	# 							s_img = get_art('wideterm', s)
+	# 							for r in s_img:
+	# 								panel.addstr(row+row_cnt, inner_text_offset, r, attr)
+	# 								row_cnt += 1
 
-						else:
-							menu_rows_fit_error = True
-					row_cnt += (LINE_SPACE) #-1)
+	# 					else:
+	# 						menu_rows_fit_error = True
+	# 				row_cnt += (LINE_SPACE) #-1)
 
 	panel.attrset(curses.color_pair(WHITE))
 	return panel_w
@@ -694,29 +691,29 @@ def draw_menu(window, menu):
 	next_x = 3
 	offset = 0
 	
-	# contents = []
-	# for k in menu.keys():
-	# 	contents.append(menu[k][0])
+	contents = []
+	for k in menu.keys():
+		contents.append(menu[k][0])
 
 	if menu_state == HEAPS:
 		# log_debug(menu, 'heaps_menu.log')
-		for k in menu.keys():
-			offset = create_heaps_panel(window, next_y, next_x, k, menu.get(k), nkeys)
-		# for idx, key in enumerate(menu.keys()):
-		# 	offset = create_heaps_panel(window, next_y, next_x, key, contents[idx], nkeys)
+		# for k in menu.keys():
+		# 	offset = create_heaps_panel(window, next_y, next_x, k, menu.get(k), nkeys)
+		for idx, key in enumerate(menu.keys()):
+			offset = create_heaps_panel(window, next_y, next_x, key, contents[idx], nkeys)
 			next_y += (offset - 1)
 	elif menu_state == MERCH:
 		next_y += draw_merch_header(window, next_y)
-		for k in menu.keys():
-			offset = create_merch_panel(window, next_y, next_x, k, menu.get(k), nkeys)
-		# for idx, key in enumerate(menu.keys()):
-		# 	offset = create_merch_panel(window, next_y, next_x, key, contents[idx], nkeys)
+		# for k in menu.keys():
+		# 	offset = create_merch_panel(window, next_y, next_x, k, menu.get(k), nkeys)
+		for idx, key in enumerate(menu.keys()):
+			offset = create_merch_panel(window, next_y, next_x, key, contents[idx], nkeys)
 			next_x += (offset - 1)
 	else:
-		for k in menu.keys():
-			offset = create_beers_panel(window, next_y, next_x, k, menu.get(k), nkeys)
-		# for idx, key in enumerate(menu.keys()):
-		# 	offset = create_beers_panel(window, next_y, next_x, key, contents[idx], nkeys)
+		# for k in menu.keys():
+		# 	offset = create_beers_panel(window, next_y, next_x, k, menu.get(k), nkeys)
+		for idx, key in enumerate(menu.keys()):
+			offset = create_beers_panel(window, next_y, next_x, key, contents[idx], nkeys)
 			# if k.lower() == 'type':
 			# 	next_x += offset
 			# else:
