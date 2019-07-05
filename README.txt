@@ -1,6 +1,6 @@
 
 python3 /home/halfway/BrewMenu/menu.py
 
-__or, simply type:__
+_or, simply type:_
 
 run
