@@ -837,7 +837,7 @@ def scroll_logo(window, image):
 
 
 def main(window):
-	global logo_img, menu_rows_fit_error, LINE_SPACE, logo_x, logo_end_x, menu_state, ls,rs,ts,bs,tl,tr,bl,br #, menu_state_timestamp
+	global logo_img, menu_rows_fit_error, LINE_SPACE, logo_x, logo_end_x, menu_state, ls,rs,ts,bs,tl,tr,bl,br, MENU_CHANGE_PERIOD #, menu_state_timestamp
 	curses.start_color()
 	curses.init_pair(GREEN, curses.COLOR_GREEN, curses.COLOR_BLACK)
 	curses.curs_set(0)
@@ -898,6 +898,13 @@ def main(window):
 
 		if scroll_cnt % scroll_speed != 0:
 			draw_logo(window, logo_img, attrs=[curses.A_BOLD]) #, curses.A_UNDERLINE]) #, curses.A_REVERSE]) #, curses.A_BLINK])
+
+		if menu_state == MERCH:
+			MENU_CHANGE_PERIOD = 10
+		elif menu_state == HEAPS:
+			MENU_CHANGE_PERIOD = 15
+		else:
+			MENU_CHANGE_PERIOD = 30
 
 		
 		if time.time() - menu_state_timestamp >= MENU_CHANGE_PERIOD:
