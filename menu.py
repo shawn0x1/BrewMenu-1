@@ -130,6 +130,9 @@ def parse(vals): 		# For currency and percentage values
 		subvals = []
 		for vv in v:
 			if isinstance(vv, str):
+				vv = vv.replace('~+', '+')
+				if '~euro~' in vv:
+					vv = vv.replace('~euro~', '€')
 				subvals.append(vv.replace('~dollar~', '$'))
 			elif isinstance(vv, float):
 				subvals.append('{:.1f}%'.format(vv*100))
