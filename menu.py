@@ -58,7 +58,7 @@ heaps_ranges_raw = ('A2:A4', 'A7:A10', 'A13:A16', 'A19:A24')
 # heaps_col_lbls = ('Double Fried Belgian Fries', 'Cheese', 'Meat', 'Heaps Savory New Zealand Pies and Rolls')
 heaps_col_lbls = ('Heaps Pies', 'Fries', 'Cheese')
 
-merch_ranges = ('merch!A3:A7', 'merch!B3:B7')
+merch_ranges = ('merch!A3:A8', 'merch!B3:B8')
 merch_cols = ('Item', 'Cost')
 
 sheet_url = "https://docs.google.com/spreadsheets/d/13AHRFbjuJ1F6LEDU5o2949DCyCFtPAxXZgHg2fLH_jc/edit?ts=5c8913ff#gid=0"
