@@ -178,7 +178,8 @@ def menu_dict():
 	for opt in menu_opts:
 		if any(opt.values()):
 			for idx, key in enumerate(opt.keys()):
-				opt.update({key : opt[key][0]})
+				if len(opt[key]) > 0:
+					opt.update({key : opt[key][0]})
 	return menu_opts
 
 
@@ -735,11 +736,12 @@ def draw_menu(window, menu):
 
 	if menu_state == HEAPS:
 		for k in menu.keys():
-			offset = create_heaps_panel(window, next_y, next_x, k, menu.get(k), nkeys)
-			old_next_y = next_y
-			next_y += (offset - 1)
-			if DEBUG_HEAPS:
-				log_debug(f'\tstart_y = {old_next_y},\tend_y = {next_y}\n', food_debug_file)
+			if any(menu.get(k)):
+				offset = create_heaps_panel(window, next_y, next_x, k, menu.get(k), nkeys)
+				old_next_y = next_y
+				next_y += (offset - 1)
+				if DEBUG_HEAPS:
+					log_debug(f'\tstart_y = {old_next_y},\tend_y = {next_y}\n', food_debug_file)
 		if DEBUG_HEAPS:
 			log_debug(('='*20) + '\n', food_debug_file)
 	elif menu_state == MERCH:
@@ -749,15 +751,17 @@ def draw_menu(window, menu):
 			next_y -= 1
 		next_x = head_start_col
 		for k in menu.keys():
-			offset = create_merch_panel(window, next_y, next_x, head_width, k, menu.get(k), nkeys)
-			next_x += (offset - 1)
+			if any(menu.get(k)):
+				offset = create_merch_panel(window, next_y, next_x, head_width, k, menu.get(k), nkeys)
+				next_x += (offset - 1)
 	else:
 		for k in menu.keys():
-			offset = create_beers_panel(window, next_y, next_x, k, menu.get(k), nkeys)
-			old_next_x = next_x
-			next_x += (offset - 1)
-			if DEBUG_BEER:
-				log_debug(f'\tstart_x = {old_next_x},\tend_x = {next_x}\n', beer_debug_file) 
+			if any(menu.get(k)):
+				offset = create_beers_panel(window, next_y, next_x, k, menu.get(k), nkeys)
+				old_next_x = next_x
+				next_x += (offset - 1)
+				if DEBUG_BEER:
+					log_debug(f'\tstart_x = {old_next_x},\tend_x = {next_x}\n', beer_debug_file) 
 		if DEBUG_BEER:
 			log_debug(('='*20) + '\n', beer_debug_file)
 
