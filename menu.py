@@ -38,6 +38,9 @@ CREDFILE = FILEPATH + 'credentials.json'
 TOKENFILE = FILEPATH + 'token.pickle'
 
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
+
+## TODO: Intelligently read in && set column labels rather than hardcoding...
+
 # LOGO_RANGE = 'A1:B1'
 #COL1_RANGE = 'A2:A14'
 #COL2_RANGE = 'B2:B14'
@@ -181,26 +184,20 @@ def menu_dict():
 
 ########## Images & Art section ###################
 logo_text = 'Halfway Crooks' # :: Brews && Blends'
-prompt_str = "sh-v4.4$ ./halfway_crooks.sh"
+prompt_str = "sh-v4.4$ ./halfway_crooks/{}.sh"
 logofonts = ['big', 'script', 'shadow', 'slant', 'smascii12', 'standard', 'mono9']
 logo_font = 'slant' #'standard'  #logofonts[3]
-lblfonts = ['future', 'emboss', 'bubble', 'digital', 'mini', 'small', 'smscript', 'smslant', 'standard']
+lblfonts = ['future', 'emboss2', 'bubble', 'digital', 'mini', 'small', 'smscript', 'smslant', 'standard']
 #heaps_fit_err_cnt = 0
 #alt_heaps_lbl_fonts = ['emboss2', 'future', 'small', 'smslant', 'smshadow']
 beers_lbls_font = 'pagga' #lblfonts[2] #5
-heaps_lbls_font = 'emboss2' #'pagga' #lblfonts[5]
+heaps_lbls_font = 'pagga' #lblfonts[5]
 merch_lbl_font = 'letter'  #'banner'
 merch_header_text = '* * M E R C H * *'
-#merch_header_text = '* MERCH *'
 WHITE = 0
 BLACK = 1
 GREEN = 3
 
-
-# if CONTROL_OS == RPI or CONTROL_OS == UBUNTU:
-# 	art_dir = os.environ['HOME'] + '/BrewMenu/art/'
-# else:
-# 	art_dir = os.environ['HOME'] + '/Documents/BrewMenu/art/'
 
 art_dir = FILEPATH + 'art/'
 
@@ -214,12 +211,10 @@ def get_art(font, text):
 	if len(split_text) > 1:
 		special_chars = ['&', '$', '*']
 		if any(char in split_text[0] for char in special_chars):
-		# if '&' in split_text[0] or '$' in split_text[0] or '*' in split_text[0]:
 			key_idx = 1
 			if any(char in split_text[1] for char in special_chars):
 				key_idx = 2
 	elif '$' in split_text[0]:
-		# split_text[0] = split_text[0].replace('$','d')
 		split_text[0] = split_text[0].replace('$',"\$")
 		is_currency = True
 	if not is_currency:
@@ -230,20 +225,11 @@ def get_art(font, text):
 	if '/' in key:
 		key = key.replace('/', '')
 	art_file = art_dir + key + '_' + font + '_art.txt'
+	t_flag = '-t' if font != 'wideterm' else '-tS'
 	if not os.path.isfile(art_file):
-		# print(art_file + ' Does not exist, trying figlet...')
-		# os.system('figlet -tk -f ' + font + ' "' + text + '" > ' + art_file)
-		if font == 'wideterm':
-			os.system('figlet -tS -f ' + font + ' "' + text + '" > ' + art_file)
-		else:
-			os.system('figlet -t -f ' + font + ' "' + text + '" > ' + art_file)
+		os.system('figlet ' + t_flag + ' -f ' + font + ' "' + text + '" > ' + art_file)
 	if not os.path.isfile(art_file) or os.stat(art_file).st_size == 0:
-		# print(art_file + ' Does not exist, trying toilet...')
-		# os.system('toilet -tk -f ' + font + ' "' + text + '" > ' + art_file)
-		if font == 'wideterm':
-			os.system('toilet -tS -f ' + font + ' "' + text + '" > ' + art_file)
-		else:
-			os.system('toilet -t -f ' + font + ' "' + text + '" > ' + art_file)
+		os.system('toilet ' + t_flag + ' -f ' + font + ' "' + text + '" > ' + art_file)
 	with open(art_file) as f:
 		art = f.readlines()
 	return art
@@ -277,7 +263,14 @@ heaps_init = False
 change_set_menu_height = 0
 menu_height = 0
 heaps_panel_h_delta = 0
-HEAPS_LABELS_AS_IMGS = False
+HEAPS_LABELS_AS_IMGS = True
+
+RIGHT_ALIGN = 0xA
+LEFT_ALIGN  = 0xB
+CENTER_ALIGN = 0xC
+food_alignment = RIGHT_ALIGN
+
+## TODO: ^ Add alignment configurations for beer && merch menus
 
 CENTER_LOGO = False
 menu_toprow = 0
@@ -286,6 +279,7 @@ logo_end_x = 0
 logo_y = 0
 logo_img = None
 
+LOGO_SCROLL = False
 LOGO_ON_SCREEN = 0
 LOGO_WRAP_RIGHT = 1
 LOGO_OFF_SCREEN = 2
@@ -299,7 +293,7 @@ HEAPS = 2
 MERCH = 3
 menu_state_list = [BEERS1, BEERS2, HEAPS, MERCH]
 menu_state = menu_state_list[0]
-MENU_CHANGE_PERIOD = 15
+MENU_CHANGE_PERIOD = 17
 
 ## Border chars for panels (set in main):
 ls=None
@@ -440,7 +434,7 @@ def create_beers_panel(window, start_row, start_col, title, content, max_cols=5,
 
 
 def create_heaps_panel(window, start_row, start_col, title, content, max_rows=4, content_color=GREEN, title_art_font=heaps_lbls_font):
-	global change_set_menu_height, heaps_panel_h_delta, heaps_init #, heaps_fit_err_cnt
+	global menu_rows_fit_error, change_set_menu_height, heaps_panel_h_delta, heaps_init #, heaps_fit_err_cnt
 	panel = None
 	if not HEAPS_LABELS_AS_IMGS:
 		title_art_font = 'term'
@@ -449,7 +443,7 @@ def create_heaps_panel(window, start_row, start_col, title, content, max_rows=4,
 
 	screen_height, screen_width = max_dimensions(window)
 
-	panel_h = len(content) + title_art_lines + 4 #5
+	panel_h = len(content) + title_art_lines + 3 #4 #5
 	
 	if menu_height != 0 and heaps_panel_h_delta == 0:
 		heaps_panel_h_delta += max(((screen_height - menu_height) // max_rows), 0)  # -5), 0)
@@ -490,22 +484,89 @@ def create_heaps_panel(window, start_row, start_col, title, content, max_rows=4,
 	panel.border(ls, rs, ts, bs, tl, tr, bl, br)
 	#panel.border()
 
-	inner_text_offset = 3 #5 
+	inner_text_offset = 4 #2
 	row_cnt = 1 #2
 
 	if HEAPS_LABELS_AS_IMGS:
+		"""
 		top = title_art[0].strip()
 		pad_cnt = 0
 		while (len(top)+4) < panel_w:
 			top = ' ' + top + ' '
 			pad_cnt += 1
-
 		for line in title_art:
 			line = line.strip()
 			startcol = int(pad_cnt) + (inner_text_offset//3)
-
 			panel.addstr(row_cnt, startcol, line, attr|curses.A_BOLD) #|curses.A_UNDERLINE)
 			row_cnt+=1
+		"""
+
+		## First draw the label art on the lefthand side of the panel, mid-height
+		midrow_start = (panel_h - title_art_lines) // 2
+		art_row_cnt = midrow_start
+		for line in title_art:
+			panel.addstr(art_row_cnt, inner_text_offset, line.strip(), attr)
+			art_row_cnt += 1
+
+		longest_line = 0
+		for i in range(len(content)):
+			if len(str(content[i]).strip()) > longest_line:
+				longest_line = len(str(content[i]).strip())
+
+		## Then write out the food menu items on the right, 2 spaces below the panel top
+		food_row_cnt = (inner_text_offset // 2) - 1
+		for num, item in enumerate(content):
+			line = str(content[num]).strip()
+			if len(line)>1:
+				# if food_row_cnt == inner_text_offset:
+				if num == 0:
+					line = title.strip() + '  { ' + line + ' }'
+				title_end_x = inner_text_offset + len(title_art[0].strip())
+				line_start_x = 0
+				pad = inner_text_offset
+
+				## For a right-aligned listing:
+				if food_alignment == RIGHT_ALIGN:
+					pad = len(line) + inner_text_offset
+					# right_edge = panel_w + start_col
+					line_start_x = panel_w - pad
+					# if num == 0:
+					# 	line_start_x -= (inner_text_offset * 2)
+				
+				## For a left-aligned listing:
+				elif food_alignment == LEFT_ALIGN:
+					# pad = title_end_x
+					while (title_end_x + len(line) + pad) >= (panel_w - inner_text_offset):
+						pad -= 1
+					while (title_end_x + longest_line + pad) <= (panel_w - int(inner_text_offset * 1.5)):
+						pad += 1
+					line_start_x = title_end_x + pad
+				
+				## Centered menu item alignment (between title image and panel width)
+				elif food_alignment == CENTER_ALIGN: 
+					line_start_x = title_end_x + (((panel_w - title_end_x) - len(line)) // 2)
+
+				if num == 0:
+					line_start_x = (panel_w - len(line)) // 2
+
+				# if DEBUG_HEAPS:
+				# 	log_debug(f'panel_title={title}\n\tpanel_h={panel_h},\tpanel_w={panel_w}' \
+				# 		f'\n\tline_start_x={line_start_x},\ttitle_end_x={title_end_x},' \
+				# 		f'\tfood_row_cnt={food_row_cnt},\n\tline={line}', food_debug_file)
+
+				try:
+					panel.addstr(food_row_cnt, line_start_x, line, attr)
+				except:
+					menu_rows_fit_error = True
+				food_row_cnt += (LINE_SPACE - 1)
+
+		if DEBUG_HEAPS:
+			log_debug(f'panel_title={title}\n\tpanel_h={panel_h},\tpanel_w={panel_w}' \
+				f'\n\tmenu_height={menu_height},\tterm_height={screen_height}', food_debug_file)
+
+		panel.attrset(curses.color_pair(WHITE))
+		return panel_h
+
 	else:
 		top = title + '  { ' + str(content[0]).strip() + ' }'
 		startcol = ((panel_w - len(top)) // 2)  # + start_col
@@ -520,7 +581,7 @@ def create_heaps_panel(window, start_row, start_col, title, content, max_rows=4,
 		log_debug(f'panel_title={title}\n\tpanel_h={panel_h},\tdelta={heaps_panel_h_delta}' \
 			f'\n\tmenu_height={menu_height},\tterm_height={screen_height}', food_debug_file)
 
-	inner_text_offset += 4
+	# inner_text_offset += 4
 
 	for row, line in enumerate(content):
 		# row_cnt += 1  	<-- Will include blank, spacer lines 
@@ -559,17 +620,10 @@ def create_merch_panel(window, start_row, start_col, header_width, title, conten
 	screen_height, screen_width = max_dimensions(window)
 	panel_h = screen_height - start_row + 1 #3
 
-	# panel_w = longest_str(content) + 2
-	# if panel_w > divided_col_width(window, max_cols):
-	# panel_w = divided_col_width(window, max_cols)
-	#panel_w = (screen_width - 8) // max_cols
 	panel_w = (header_width // max_cols) #+ 1
 	if title.lower() != 'cost':
 		panel_w += 1
 
-	# while (start_col+panel_w) > (screen_width):
-	# 	#panel_w -= 1
-	# 	start_col -= 1
 	try:
 		panel = window.derwin(panel_h, panel_w, start_row, start_col)
 	except:
@@ -587,13 +641,8 @@ def create_merch_panel(window, start_row, start_col, header_width, title, conten
 
 	panel.border(ls, rs, ts, bs, tl, tr, bl, br)
 
-	# inner_text_offset = 4  #3
 	row_cnt = 1 #2
 
-	# panel.addstr(row_cnt, inner_text_offset-1, '~'*((panel_w-inner_text_offset*2)+2)) #, attr)
-	# row_cnt+=2 #1
-
-	# inner_text_offset -= 3
 	if content:
 		for row, line in enumerate(content):
 			# row_cnt += 1
@@ -678,16 +727,15 @@ def draw_merch_header(window, start_row, content=merch_header_text, content_colo
 def draw_menu(window, menu):
 	global menu_width, menu_height, menu_toprow, change_set_menu_width, change_set_menu_height
 	nkeys = len(menu.keys())
-	next_y = len(logo_img) + 1 		# Represents height of logo art file
+	next_y = len(logo_img) 		# Represents height of logo art file
+	if LOGO_SCROLL or CENTER_LOGO:
+		next_y += 1
 	next_x = 3
 	offset = 0
 
 	if menu_state == HEAPS:
-		# log_debug(menu, 'heaps_menu.log')
 		for k in menu.keys():
 			offset = create_heaps_panel(window, next_y, next_x, k, menu.get(k), nkeys)
-		# for idx, key in enumerate(menu.keys()):
-		# 	offset = create_heaps_panel(window, next_y, next_x, key, contents[idx], nkeys)
 			old_next_y = next_y
 			next_y += (offset - 1)
 			if DEBUG_HEAPS:
@@ -695,20 +743,17 @@ def draw_menu(window, menu):
 		if DEBUG_HEAPS:
 			log_debug(('='*20) + '\n', food_debug_file)
 	elif menu_state == MERCH:
-		#next_y += draw_merch_header(window, next_y, next_x) - 1
 		head_y, head_width, head_start_col = draw_merch_header(window, next_y) #, next_x)
-		next_y += (head_y - 1)
+		next_y += head_y
+		if LOGO_SCROLL or CENTER_LOGO:
+			next_y -= 1
 		next_x = head_start_col
 		for k in menu.keys():
 			offset = create_merch_panel(window, next_y, next_x, head_width, k, menu.get(k), nkeys)
-		# for idx, key in enumerate(menu.keys()):
-		# 	offset = create_merch_panel(window, next_y, next_x, key, contents[idx], nkeys)
 			next_x += (offset - 1)
 	else:
 		for k in menu.keys():
 			offset = create_beers_panel(window, next_y, next_x, k, menu.get(k), nkeys)
-		# for idx, key in enumerate(menu.keys()):
-		# 	offset = create_beers_panel(window, next_y, next_x, key, contents[idx], nkeys)
 			old_next_x = next_x
 			next_x += (offset - 1)
 			if DEBUG_BEER:
@@ -758,13 +803,15 @@ def draw_logo(window, image, attrs=None):
 	window.attrset(attr)
 	## row will range from 1-6, column will range from 0-143 
 
+	start_row = 1 if (LOGO_SCROLL or CENTER_LOGO) else 0
+
 	start_column = None #logo_x
 	end_column = None #logo_end_x  #start_column + longest_str(image)
 	first_col = None  ## THIS IS THE COLUMN INDEX TO BEGIN DRAWING FROM
 	last_col = terminal_width  							# Dummy large value to initialize
 
 	if logo_state == LOGO_ON_SCREEN or logo_state == LOGO_WRAP_RIGHT:  ## Use both logo_x & logo_end_x
-		for row, line in enumerate(image, start=1):
+		for row, line in enumerate(image, start=start_row):
 			for column, symbol in enumerate(line, start=logo_x):
 				if (column < terminal_width):
 					window.addch(row+logo_y, column, symbol, attr)
@@ -774,7 +821,7 @@ def draw_logo(window, image, attrs=None):
 		if logo_end_x >= (longest_str(image) - 1):
 			logo_x = -3 #0
 		else:
-			for row, line in enumerate(image, start=1):			# Start from 1 to leave row space for prompt_str
+			for row, line in enumerate(image, start=start_row):			# Start from 1 to leave row space for prompt_str
 				last_col = len(line) - 1
 				for column, symbol in enumerate(line, start=0):
 					if (last_col - column) <= logo_end_x:
@@ -795,7 +842,7 @@ def main(window):
 	curses.init_pair(GREEN, curses.COLOR_GREEN, curses.COLOR_BLACK)
 	curses.curs_set(0)
 	menu_opts = menu_dict()
-	prompt_len = len(prompt_str)
+	# prompt_len = len(prompt_str)
 	toggle_cursor = False
 	toggle_char = '_'
 	scroll_cnt = 0
@@ -805,7 +852,7 @@ def main(window):
 	if CENTER_LOGO:
 		logo_x = (max_dimensions(window)[1] - logo_len) // 2
 	else:
-		logo_x = max_dimensions(window)[1] - (logo_len + 10)
+		logo_x = max_dimensions(window)[1] - logo_len - 3 #4) #10)
 	logo_end_x = logo_x + logo_len #longest_str(logo_img)
 
 	ls=curses.ACS_PLUS #LTEE
@@ -843,19 +890,16 @@ def main(window):
 	menu_state_timestamp = time.time()
 
 	while True:
-		scroll_cnt %= 100
+		scroll_cnt %= 1000000
 		window.erase()
 		# window.addstr(2,2,str(scroll_cnt),curses.color_pair(WHITE))
-		window.addstr(0,1,prompt_str)
-		if scroll_cnt % 2 == 0:
-			toggle_char = '_' if toggle_cursor else ' '
-			toggle_cursor = not toggle_cursor
-		window.addch(0,1+prompt_len,toggle_char, curses.color_pair(WHITE))# | curses.A_BLINK)
-		#window.addch(window.getmaxyx()[0]-1,1+prompt_len,toggle_char, curses.color_pair(WHITE))# | curses.A_BLINK)
+		# window.addstr(2,2,str(max_dimensions(window)[0]),curses.color_pair(WHITE))
+		# window.addstr(3,2,str(max_dimensions(window)[1]),curses.color_pair(WHITE))
 
 		if scroll_cnt % scroll_speed != 0:
 			draw_logo(window, logo_img, attrs=[curses.A_BOLD]) #, curses.A_UNDERLINE]) #, curses.A_REVERSE]) #, curses.A_BLINK])
 
+		
 		if time.time() - menu_state_timestamp >= MENU_CHANGE_PERIOD:
 			# if time.time() - menu_state_timestamp >= 60:
 			# 	global logo_state
@@ -885,8 +929,17 @@ def main(window):
 		# 	LINE_SPACE -= 1
 		# 	menu_rows_fit_error = False
 
-		#if scroll_cnt % scroll_speed == 0:
-		#	scroll_logo(window, logo_img)
+		if LOGO_SCROLL:
+			if scroll_cnt % scroll_speed == 0:
+				scroll_logo(window, logo_img)
+
+
+		prompt_dir = 'merch' if menu_state == MERCH else 'food' if menu_state == HEAPS else 'beer'
+		window.addstr(0,1,prompt_str.format(prompt_dir))
+		if scroll_cnt % 2 == 0:
+			toggle_char = '_' if toggle_cursor else ' '
+			toggle_cursor = not toggle_cursor
+		window.addch(0,1+len(prompt_str.format(prompt_dir)),toggle_char, curses.color_pair(WHITE))
 
 		window.refresh()
 		time.sleep(LOOP_SLEEP)
