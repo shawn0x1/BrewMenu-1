@@ -421,7 +421,7 @@ def create_beers_panel(window, start_row, start_col, title, content, max_cols=5,
 		log_debug(f'col_title={title}\n\tpanel_w={panel_w}, bar_len={bar_len}, delta={beer_panel_w_delta}' \
 			f'\n\tmenu_width={menu_width}, term_width={screen_width}', beer_debug_file)
 	panel.addstr(row_cnt, bar_start, '~'*bar_len) #, attr)
-	row_cnt+=2 #1
+	row_cnt+=1
 
 	# inner_text_offset -= 3
 
