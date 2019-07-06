@@ -254,8 +254,12 @@ def longest_str(image): 		# Determine max width of an ASCII art file   ## ENSURE
 
 ########## Curses TUI section ########################
 LOOP_SLEEP = 0.25  #0.15
-LINE_SPACE = 3
-menu_rows_fit_error = False
+BEERS_LINE_SPACE = 3
+HEAPS_LINE_SPACE = 3
+MERCH_LINE_SPACE = 3
+beer_menu_rows_fit_error = False
+food_menu_rows_fit_error = False
+merch_menu_rows_fit_error = False
 CENTER_MENU_TEXT = True
 
 beers_init = False
@@ -321,7 +325,7 @@ def divided_row_height(window, nrows):
 
 
 def create_beers_panel(window, start_row, start_col, title, content, max_cols=5, content_color=GREEN, title_art_font=beers_lbls_font):
-	global menu_rows_fit_error, change_set_menu_width, beer_panel_w_delta, beers_init
+	global beer_menu_rows_fit_error, change_set_menu_width, beer_panel_w_delta, beers_init
 	panel = None
 	title_art = get_art(title_art_font, title)
 	title_art_lines = len(title_art)
@@ -417,20 +421,23 @@ def create_beers_panel(window, start_row, start_col, title, content, max_cols=5,
 		log_debug(f'col_title={title}\n\tpanel_w={panel_w}, bar_len={bar_len}, delta={beer_panel_w_delta}' \
 			f'\n\tmenu_width={menu_width}, term_width={screen_width}', beer_debug_file)
 	panel.addstr(row_cnt, bar_start, '~'*bar_len) #, attr)
-	row_cnt+=2 #1
+	row_cnt+=1
 
 	# inner_text_offset -= 3
 
 	for row, line in enumerate(content):
 		row_cnt += 1
 		s = str(line).strip()
-		if (len(s) > 1) and ((start_row+row+row_cnt) < (start_row+panel_h)):
-			if CENTER_MENU_TEXT:
-				inner_text_offset = (panel_w - len(s)) // 2
+		if (len(s) > 1):
+			if ((start_row+row+row_cnt) < (start_row+panel_h)):
+				if CENTER_MENU_TEXT:
+					inner_text_offset = (panel_w - len(s)) // 2
+				else:
+					inner_text_offset = 4
+				panel.addstr(row+row_cnt, inner_text_offset, s, attr)
 			else:
-				inner_text_offset = 4
-			panel.addstr(row+row_cnt, inner_text_offset, s, attr)
-		row_cnt += (LINE_SPACE-1)
+				beer_menu_rows_fit_error = True
+			row_cnt += (BEERS_LINE_SPACE-1)
 
 
 	panel.attrset(curses.color_pair(WHITE))
@@ -438,7 +445,7 @@ def create_beers_panel(window, start_row, start_col, title, content, max_cols=5,
 
 
 def create_heaps_panel(window, start_row, start_col, title, content, max_rows=4, content_color=GREEN, title_art_font=heaps_lbls_font):
-	global menu_rows_fit_error, change_set_menu_height, heaps_panel_h_delta, heaps_init #, heaps_fit_err_cnt
+	global food_menu_rows_fit_error, change_set_menu_height, heaps_panel_h_delta, heaps_init #, heaps_fit_err_cnt
 	panel = None
 	if not HEAPS_LABELS_AS_IMGS:
 		title_art_font = 'term'
@@ -561,8 +568,8 @@ def create_heaps_panel(window, start_row, start_col, title, content, max_rows=4,
 				try:
 					panel.addstr(food_row_cnt, line_start_x, line, attr)
 				except:
-					menu_rows_fit_error = True
-				food_row_cnt += (LINE_SPACE - 1)
+					food_menu_rows_fit_error = True
+				food_row_cnt += (HEAPS_LINE_SPACE - 1)
 
 		if DEBUG_HEAPS:
 			log_debug(f'panel_title={title}\n\tpanel_h={panel_h},\tpanel_w={panel_w}' \
@@ -619,7 +626,7 @@ def create_heaps_panel(window, start_row, start_col, title, content, max_rows=4,
 	return panel_h
 
 def create_merch_panel(window, start_row, start_col, header_width, title, content, max_cols=2, content_color=GREEN):
-	global menu_rows_fit_error
+	global merch_menu_rows_fit_error
 	panel = None 
 	screen_height, screen_width = max_dimensions(window)
 	panel_h = screen_height - start_row + 1 #3
@@ -668,8 +675,8 @@ def create_merch_panel(window, start_row, start_col, header_width, title, conten
 						inner_text_offset = 4
 					panel.addstr(row_cnt, inner_text_offset, s, attr)
 				else:
-					menu_rows_fit_error = True
-			row_cnt += (LINE_SPACE-1)
+					merch_menu_rows_fit_error = True
+			row_cnt += (MERCH_LINE_SPACE-1)
 
 	panel.attrset(curses.color_pair(WHITE))
 
@@ -844,7 +851,7 @@ def scroll_logo(window, image):
 
 
 def main(window):
-	global logo_img, menu_rows_fit_error, LINE_SPACE, logo_x, logo_end_x, menu_state, ls,rs,ts,bs,tl,tr,bl,br, MENU_CHANGE_PERIOD #, menu_state_timestamp
+	global logo_img,beer_menu_rows_fit_error,food_menu_rows_fit_error,merch_menu_rows_fit_error,BEERS_LINE_SPACE,HEAPS_LINE_SPACE,MERCH_LINE_SPACE,logo_x,logo_end_x,menu_state,ls,rs,ts,bs,tl,tr,bl,br,MENU_CHANGE_PERIOD #, menu_state_timestamp
 	curses.start_color()
 	curses.init_pair(GREEN, curses.COLOR_GREEN, curses.COLOR_BLACK)
 	curses.curs_set(0)
@@ -939,9 +946,15 @@ def main(window):
 
 		draw_menu(window, menu)
 
-		# if menu_rows_fit_error:
-		# 	LINE_SPACE -= 1
-		# 	menu_rows_fit_error = False
+		if beer_menu_rows_fit_error:		# TODO: also add in a check for num items in list (if over 6 then either decrease line space or add to BEERS2)
+			BEERS_LINE_SPACE -= 1
+			beer_menu_rows_fit_error = False
+		if food_menu_rows_fit_error:
+			HEAPS_LINE_SPACE -= 1
+			food_menu_rows_fit_error = False
+		if merch_menu_rows_fit_error:
+			MERCH_LINE_SPACE -= 1
+			merch_menu_rows_fit_error = False
 
 		if LOGO_SCROLL:
 			if scroll_cnt % scroll_speed == 0:
