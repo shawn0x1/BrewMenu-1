@@ -154,22 +154,22 @@ def parse(vals): 		# For currency and percentage values
 	return retvals
 
 def menu_dict():
-    global beers_col_lbls, heaps_col_lbls, merch_cols
-    with open("config.yml", 'r') as ymlfile:
-        cfg = yaml.load(ymlfile, Loader=yaml.Loader)
-    beers_col_lbls = cfg['labels']['beer_cols']
-    heaps_col_lbls = cfg['labels']['food_cols']
-    merch_cols = cfg['labels']['merch_cols']
-        
+	global beers_col_lbls, heaps_col_lbls, merch_cols
+	with open("config.yml", 'r') as ymlfile:
+		cfg = yaml.load(ymlfile, Loader=yaml.Loader)
+	beers_col_lbls = cfg['labels']['beer_cols']
+	heaps_col_lbls = cfg['labels']['food_cols']
+	merch_cols = cfg['labels']['merch_cols']
+
 	beer_menu1 = dict.fromkeys(beers_col_lbls, [])
 	beer_menu2 = dict.fromkeys(beers_col_lbls, [])
 	heaps_menu = dict.fromkeys(heaps_col_lbls, [])
 	merch_menu = dict.fromkeys(merch_cols, [])
-	
+
 	# Call the Sheets API
 	service = validate_service()
 	sheet = service.spreadsheets()
-	
+
 	for i in range(len(beers_col_lbls)):
 		beer_menu1.update(
 			{
@@ -185,7 +185,7 @@ def menu_dict():
 	for i in range(len(heaps_col_lbls)):
 		heaps_menu.update(
 			{
-				heaps_col_lbls[i] : parse(read_sheet(sheet, heaps_ranges[i], sid=HEAPS_ID)) 
+				heaps_col_lbls[i] : parse(read_sheet(sheet, heaps_ranges[i], sid=HEAPS_ID))
 			}
 		)
 	for i in range(len(merch_cols)):
@@ -324,11 +324,11 @@ MENU_CHANGE_PERIOD = 17
 ls=None
 rs=None
 ts=None
-bs=None 
-tl=None 
-tr=None 
+bs=None
+tl=None
+tr=None
 bl=None
-br=None 
+br=None
 
 def max_dimensions(window):
 	height, width = window.getmaxyx()
@@ -375,7 +375,7 @@ def create_beers_panel(window, start_row, start_col, title, content, max_cols=5,
 	try:
 		panel = window.derwin(panel_h, panel_w, start_row, start_col)
 	except:
-		return panel_w 
+		return panel_w
 	if panel is None:
 		return panel_w
 
@@ -432,7 +432,7 @@ def create_beers_panel(window, start_row, start_col, title, content, max_cols=5,
 	row_cnt+=1
 	# bar_len = ((panel_w - (inner_text_offset*2)) + 2)
 	bar_start = (inner_text_offset // 2)
-	bar_len = panel_w - inner_text_offset 
+	bar_len = panel_w - inner_text_offset
 
 	if DEBUG_BEER:
 		log_debug(f'col_title={title}\n\tpanel_w={panel_w}, bar_len={bar_len}, delta={beer_panel_w_delta}' \
@@ -472,7 +472,7 @@ def create_heaps_panel(window, start_row, start_col, title, content, max_rows=4,
 	screen_height, screen_width = max_dimensions(window)
 
 	panel_h = len(content) + title_art_lines + 3 #4 #5
-	
+
 	if menu_height != 0 and heaps_panel_h_delta == 0:
 		heaps_panel_h_delta += max(((screen_height - menu_height) // max_rows), 0)  # -5), 0)
 		if change_set_menu_height == 0:
@@ -490,7 +490,7 @@ def create_heaps_panel(window, start_row, start_col, title, content, max_rows=4,
 	try:
 		panel = window.derwin(panel_h, panel_w, start_row, start_col)
 	except:
-		return panel_w 
+		return panel_w
 	if panel is None:
 		return panel_w
 
@@ -560,7 +560,7 @@ def create_heaps_panel(window, start_row, start_col, title, content, max_rows=4,
 					line_start_x = panel_w - pad
 					# if num == 0:
 					# 	line_start_x -= (inner_text_offset * 2)
-				
+
 				## For a left-aligned listing:
 				elif food_alignment == LEFT_ALIGN:
 					# pad = title_end_x
@@ -569,9 +569,9 @@ def create_heaps_panel(window, start_row, start_col, title, content, max_rows=4,
 					while (title_end_x + longest_line + pad) <= (panel_w - int(inner_text_offset * 1.5)):
 						pad += 1
 					line_start_x = title_end_x + pad
-				
+
 				## Centered menu item alignment (between title image and panel width)
-				elif food_alignment == CENTER_ALIGN: 
+				elif food_alignment == CENTER_ALIGN:
 					line_start_x = title_end_x + (((panel_w - title_end_x) - len(line)) // 2)
 
 				if num == 0:
@@ -612,7 +612,7 @@ def create_heaps_panel(window, start_row, start_col, title, content, max_rows=4,
 	# inner_text_offset += 4
 
 	for row, line in enumerate(content):
-		# row_cnt += 1  	<-- Will include blank, spacer lines 
+		# row_cnt += 1  	<-- Will include blank, spacer lines
 		if not HEAPS_LABELS_AS_IMGS and row == 0:
 			continue
 		s = str(line).strip()
@@ -644,7 +644,7 @@ def create_heaps_panel(window, start_row, start_col, title, content, max_rows=4,
 
 def create_merch_panel(window, start_row, start_col, header_width, title, content, max_cols=2, content_color=GREEN):
 	global merch_menu_rows_fit_error
-	panel = None 
+	panel = None
 	screen_height, screen_width = max_dimensions(window)
 	panel_h = screen_height - start_row + 1 #3
 
@@ -655,7 +655,7 @@ def create_merch_panel(window, start_row, start_col, header_width, title, conten
 	try:
 		panel = window.derwin(panel_h, panel_w, start_row, start_col)
 	except:
-		return panel_w 
+		return panel_w
 	if panel is None:
 		return panel_w
 
@@ -674,7 +674,7 @@ def create_merch_panel(window, start_row, start_col, header_width, title, conten
 	if content:
 		for row, line in enumerate(content):
 			# row_cnt += 1
-			
+
 			s = str(line).strip()
 			#ss = str(line).strip()
 			if len(s) > 1:
@@ -705,7 +705,7 @@ def draw_merch_header(window, start_row, content=merch_header_text, content_colo
 	#title_art_lines = len(title_art)
 	screen_height, screen_width = max_dimensions(window)
 	panel_h = len(title_art) + 4 #3 #2 #title_art_lines + 8 #10 #6 #4
-	panel_w = int(len(title_art[1].strip()) * 2) #1.5)  
+	panel_w = int(len(title_art[1].strip()) * 2) #1.5)
 	if panel_w > screen_width:
 		panel_w = screen_width - 8 #4
 	#while panel_w % 2 != 0:
@@ -722,7 +722,7 @@ def draw_merch_header(window, start_row, content=merch_header_text, content_colo
 		start_col = 4
 	panel = window.derwin(panel_h, panel_w, start_row, start_col)
 	#		panel_h -= 1
-	#	return panel_w 
+	#	return panel_w
 	#if panel is None:
 	#	return panel_w
 
@@ -788,7 +788,7 @@ def draw_menu(window, menu):
 				old_next_x = next_x
 				next_x += (offset - 1)
 				if DEBUG_BEER:
-					log_debug(f'\tstart_x = {old_next_x},\tend_x = {next_x}\n', beer_debug_file) 
+					log_debug(f'\tstart_x = {old_next_x},\tend_x = {next_x}\n', beer_debug_file)
 		if DEBUG_BEER:
 			log_debug(('='*20) + '\n', beer_debug_file)
 
@@ -809,7 +809,7 @@ def draw_logo(window, image, attrs=None):
 	global logo_x, logo_end_x, logo_state, LOOP_SLEEP
 	terminal_width = max_dimensions(window)[1]
 	#start_column = terminal_width - logo_x
-	
+
 	if logo_state == LOGO_WRAP_LEFT and logo_x == 0 and 0 < logo_end_x < terminal_width:
 		logo_state = LOGO_ON_SCREEN
 		LOOP_SLEEP += 0.05
@@ -832,7 +832,7 @@ def draw_logo(window, image, attrs=None):
 		for a in attrs:
 			attr |= a
 	window.attrset(attr)
-	## row will range from 1-6, column will range from 0-143 
+	## row will range from 1-6, column will range from 0-143
 
 	start_row = 1 if (LOGO_SCROLL or CENTER_LOGO) else 0
 
@@ -898,13 +898,13 @@ def main(window):
 	if DEBUG_BEER:
 		if os.path.exists(beer_debug_file):
 			os.system(f'rm {beer_debug_file}')
-			beer_dict_out = json.dumps(menu_opts[0], indent=4) 
+			beer_dict_out = json.dumps(menu_opts[0], indent=4)
 			if any(menu_opts[1].values()):
 				beer_dict_out += '\n' + json.dumps(menu_opts[1], indent=4)
 			os.system(f'echo {beer_dict_out} > {beer_debug_file}')
 			log_debug(('_'*24)+'\n\n', beer_debug_file)
 	if DEBUG_HEAPS:
-		if os.path.exists(food_debug_file): 
+		if os.path.exists(food_debug_file):
 			os.system(f'rm {food_debug_file}')
 			heap_dict_out = json.dumps(menu_opts[2], indent=4)
 			os.system(f'echo {heap_dict_out} > {food_debug_file}')
@@ -937,7 +937,7 @@ def main(window):
 		else:
 			MENU_CHANGE_PERIOD = 30
 
-		
+
 		if time.time() - menu_state_timestamp >= MENU_CHANGE_PERIOD:
 			# if time.time() - menu_state_timestamp >= 60:
 			# 	global logo_state
@@ -953,7 +953,7 @@ def main(window):
 			elif DEBUG_HEAPS:
 				menu_state = HEAPS
 			else:
-				menu_state = MERCH 
+				menu_state = MERCH
 
 		menu = menu_opts[menu_state]
 		if not any(menu.values()): # or menu_state == MERCH:
