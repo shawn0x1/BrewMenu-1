@@ -1,6 +1,12 @@
 #!/usr/bin/python3
+
+#beers_col_lbls = ('Name', 'Type', 'ABV', 'Pour', 'Cost')
+#heaps_col_lbls = ('Heaps Pies', 'Fries', 'Cheese')
+#merch_cols = ('Item', 'Cost')
+
 import pickle
 import json
+import yaml
 import sys
 import os
 import curses
@@ -40,6 +46,10 @@ TOKENFILE = FILEPATH + 'token.pickle'
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 
 ## TODO: Intelligently read in && set column labels rather than hardcoding...
+## (currently reading values in from config.yml -- temporary solution)
+beers_col_lbls = []
+heaps_col_lbls = []
+merch_cols = []
 
 # LOGO_RANGE = 'A1:B1'
 #COL1_RANGE = 'A2:A14'
@@ -50,16 +60,16 @@ beers_ranges1 = ['beers!A3:A10', 'beers!B3:B10', 'beers!C3:C10', 'beers!D3:D10',
 beers_ranges2 = ['beers!A11:A17', 'beers!B11:B17', 'beers!C11:C17', 'beers!D11:D17', 'beers!E11:E17']
 beers_ranges1_raw = ('A3:A10', 'B3:B10', 'C3:C10', 'D3:D10', 'E3:E10')
 beers_ranges2_raw = ('A11:A17', 'B11:B17', 'C11:C17', 'D11:D17', 'E11:E17')
-beers_col_lbls = ('Name', 'Type', 'ABV', 'Pour', 'Cost')
+
 # heaps_range = 'heaps!A1:A24'
 # heaps_ranges = ('heaps!A2:A4', 'heaps!A7:A10', 'heaps!A13:A16', 'heaps!A19:A24')
 heaps_ranges = ('food!A2:A7', 'food!A10:A14', 'food!A15:A18')
 heaps_ranges_raw = ('A2:A4', 'A7:A10', 'A13:A16', 'A19:A24')
 # heaps_col_lbls = ('Double Fried Belgian Fries', 'Cheese', 'Meat', 'Heaps Savory New Zealand Pies and Rolls')
-heaps_col_lbls = ('Heaps Pies', 'Fries', 'Cheese')
+
 
 merch_ranges = ('merch!A3:A8', 'merch!B3:B8')
-merch_cols = ('Item', 'Cost')
+
 
 sheet_url = "https://docs.google.com/spreadsheets/d/13AHRFbjuJ1F6LEDU5o2949DCyCFtPAxXZgHg2fLH_jc/edit?ts=5c8913ff#gid=0"
 beers_url = 'https://docs.google.com/spreadsheets/d/13AHRFbjuJ1F6LEDU5o2949DCyCFtPAxXZgHg2fLH_jc/edit?ts=5c8913ff#gid=0'
@@ -144,6 +154,13 @@ def parse(vals): 		# For currency and percentage values
 	return retvals
 
 def menu_dict():
+    global beers_col_lbls, heaps_col_lbls, merch_cols
+    with open("config.yml", 'r') as ymlfile:
+        cfg = yaml.load(ymlfile, Loader=yaml.Loader)
+    beers_col_lbls = cfg['labels']['beer_cols']
+    heaps_col_lbls = cfg['labels']['food_cols']
+    merch_cols = cfg['labels']['merch_cols']
+        
 	beer_menu1 = dict.fromkeys(beers_col_lbls, [])
 	beer_menu2 = dict.fromkeys(beers_col_lbls, [])
 	heaps_menu = dict.fromkeys(heaps_col_lbls, [])

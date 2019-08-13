@@ -43,6 +43,7 @@ pip_packages=[
 	"google-auth-oauthlib",
 	"pillow==2.7.0",			## FIXME: PROBLEM INSTALLING PILLOW
 	"asciimatics",
+	"pyyaml"
 ]
 
 pkgstr=""

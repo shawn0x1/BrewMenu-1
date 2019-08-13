@@ -1,0 +1,16 @@
+labels:
+    beer_cols:
+        - Name
+        - Type
+        - ABV
+        - Pour
+        - Cost
+
+    food_cols:
+        - Heaps Pies
+        - Fries
+        - Cheese
+
+    merch_cols:
+        - Item
+        - Cost
